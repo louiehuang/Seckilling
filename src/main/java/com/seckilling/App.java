@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
+
 /**
  * Hello world!
  *
@@ -18,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 @MapperScan(basePackages = {"com.seckilling.dao"})
 public class App {
 
-    @Autowired
+//    @Autowired
+    @Resource
     private UserDOMapper userDOMapper;
 
     public static void main( String[] args ) {
