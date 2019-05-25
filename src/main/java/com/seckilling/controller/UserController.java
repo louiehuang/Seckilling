@@ -1,6 +1,9 @@
 package com.seckilling.controller;
 
 import com.seckilling.controller.viewobject.UserVO;
+import com.seckilling.error.BusinessException;
+import com.seckilling.error.EBusinessError;
+import com.seckilling.response.CommonReturnType;
 import com.seckilling.service.UserService;
 import com.seckilling.service.model.UserModel;
 import org.springframework.beans.BeanUtils;
@@ -19,10 +22,16 @@ public class UserController {
 
     @RequestMapping("/get")
     @ResponseBody
-    public UserVO getUser(@RequestParam(name="id") Integer id) {
+    public CommonReturnType getUser(@RequestParam(name="id") Integer id) throws BusinessException {
         // http://localhost:9000/user/get?id=1
         UserModel userModel = userService.getUserById(id);
-        return convertFromModel(userModel);
+
+        if (userModel== null) {
+            throw new BusinessException(EBusinessError.USER_NOT_EXIST);
+        }
+
+        UserVO userVO = convertFromModel(userModel);
+        return CommonReturnType.create(userVO);
     }
 
     private UserVO convertFromModel(UserModel userModel) {
