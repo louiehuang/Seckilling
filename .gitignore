@@ -1,0 +1,10 @@
+# mybatis-generator
+src/main/resources/mybatis-generator.xml
+
+# application.properties
+src/main/resources/application.properties
+
+.DS_Store
+
+.idea
+
