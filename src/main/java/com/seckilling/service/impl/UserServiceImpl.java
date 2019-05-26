@@ -8,6 +8,8 @@ import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.service.UserService;
 import com.seckilling.service.model.UserModel;
+import com.seckilling.validator.ValidationResult;
+import com.seckilling.validator.ValidatorImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -25,6 +27,9 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     private UserPasswordDOMapper userPasswordDOMapper;
+
+    @Resource
+    private ValidatorImpl validator;
 
 
     @Override
@@ -44,9 +49,10 @@ public class UserServiceImpl implements UserService {
         if (userModel == null) {
             throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID);
         }
-        if (StringUtils.isEmpty(userModel.getName()) ||userModel.getGender() == null ||
-                userModel.getAge() == null || StringUtils.isEmpty(userModel.getCellphone())) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID);
+
+        ValidationResult validationResult = validator.validate(userModel);
+        if (validationResult.isHasError()) {
+            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID, validationResult.getErrMsg());
         }
 
         //Transactional register
