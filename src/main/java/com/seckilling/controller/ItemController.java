@@ -7,9 +7,7 @@ import com.seckilling.service.ItemService;
 import com.seckilling.service.model.ItemModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -23,13 +21,15 @@ public class ItemController extends BaseController {
     @Resource
     private ItemService itemService;
 
-    public CommonReturnType createItem(@RequestParam(name="name") String name,
+    @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
+    @ResponseBody
+    public CommonReturnType createItem(@RequestParam(name="itemName") String itemName,
                                        @RequestParam(name="description") String description,
                                        @RequestParam(name="imgUrl") String imgUrl,
-                                       @RequestParam(name="name") BigDecimal price,
-                                       @RequestParam(name="name") Integer stock) throws BusinessException {
+                                       @RequestParam(name="price") BigDecimal price,
+                                       @RequestParam(name="stock") Integer stock) throws BusinessException {
         ItemModel itemModel = new ItemModel();
-        itemModel.setName(name);
+        itemModel.setName(itemName);
         itemModel.setDescription(description);
         itemModel.setImgUrl(imgUrl);
         itemModel.setPrice(price);

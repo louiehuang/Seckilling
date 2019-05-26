@@ -91,7 +91,7 @@ public class ItemServiceImpl implements ItemService {
             return null;
         ItemStockDO itemStockDO = new ItemStockDO();
         itemStockDO.setItemId(itemModel.getId());
-        itemModel.setStock(itemModel.getStock());
+        itemStockDO.setStock(itemModel.getStock());
 
         return itemStockDO;
     }
