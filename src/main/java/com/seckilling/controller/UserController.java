@@ -62,7 +62,7 @@ public class UserController extends BaseController {
                                      @RequestParam(name="cellphone") String cellphone,
                                      @RequestParam(name="otpCode") String otpCode,
                                      @RequestParam(name="password") String password)
-            throws BusinessException, UnsupportedEncodingException, NoSuchAlgorithmException {
+            throws BusinessException, NoSuchAlgorithmException {
 
         String otpCodeInSession = (String) this.httpServletRequest.getSession().getAttribute(cellphone);
         if (!StringUtils.equals(otpCode, otpCodeInSession)) {
@@ -82,7 +82,26 @@ public class UserController extends BaseController {
     }
 
 
-    public String encodeByMD5(String str) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+    @RequestMapping(value = "/login", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
+    @ResponseBody
+    public CommonReturnType login(@RequestParam(name="cellphone") String cellphone,
+                                  @RequestParam(name="password") String password)
+            throws BusinessException, NoSuchAlgorithmException {
+        if (StringUtils.isEmpty(cellphone) || StringUtils.isEmpty(password)) {
+            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID);
+        }
+
+        UserModel userModel = userService.validateLogin(cellphone, encodeByMD5(password));
+
+        //add to session if login succeed
+        this.httpServletRequest.getSession().setAttribute("IS_LOGIN", true);
+        this.httpServletRequest.getSession().setAttribute("LOGIN_USER", userModel);
+
+        return CommonReturnType.create(null);
+    }
+
+
+    public String encodeByMD5(String str) throws NoSuchAlgorithmException {
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         BASE64Encoder base64Encoder = new BASE64Encoder();
         return base64Encoder.encode(md5.digest(str.getBytes(StandardCharsets.UTF_8)));

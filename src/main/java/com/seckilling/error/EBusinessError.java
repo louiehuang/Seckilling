@@ -7,6 +7,7 @@ public enum EBusinessError implements CommonError {
 
     //User errors
     USER_NOT_EXIST(20001, "User does not exist"),
+    USER_LOGIN_FAIL(20002, "Wrong cellphone number or password"),
 
     ;
 
