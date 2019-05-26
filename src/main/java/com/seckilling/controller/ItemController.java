@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Controller("item")
@@ -52,6 +54,17 @@ public class ItemController extends BaseController {
         ItemVO itemVO = convertItemModelTOItemVO(itemModel);
 
         return CommonReturnType.create(itemVO);
+    }
+
+
+    @RequestMapping(value = "/getAll", method = {RequestMethod.GET})
+    @ResponseBody
+    public CommonReturnType getAllItems() {
+        List<ItemModel> itemModelList = itemService.getAllItems();
+        List<ItemVO> itemVOList = itemModelList.stream()
+                .map(this::convertItemModelTOItemVO)
+                .collect(Collectors.toList());
+        return CommonReturnType.create(itemVOList);
     }
 
 

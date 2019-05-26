@@ -11,6 +11,6 @@ public interface ItemService {
 
     ItemModel getItemById(Integer id);
 
-    List<ItemModel> listItem();
+    List<ItemModel> getAllItems();
 
 }
