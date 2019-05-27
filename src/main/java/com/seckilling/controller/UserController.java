@@ -1,6 +1,7 @@
 package com.seckilling.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.seckilling.common.Constants;
 import com.seckilling.controller.viewobject.UserVO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
@@ -65,7 +66,7 @@ public class UserController extends BaseController {
 
         String otpCodeInSession = (String) this.httpServletRequest.getSession().getAttribute(cellphone);
         if (!StringUtils.equals(otpCode, otpCodeInSession)) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID, "otp code not match");
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "otp code not match");
         }
 
         UserModel userModel = new UserModel();
@@ -87,14 +88,14 @@ public class UserController extends BaseController {
                                   @RequestParam(name="password") String password)
             throws BusinessException, NoSuchAlgorithmException {
         if (StringUtils.isEmpty(cellphone) || StringUtils.isEmpty(password)) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID);
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID);
         }
 
         UserModel userModel = userService.validateLogin(cellphone, encodeByMD5(password));
 
         //add to session if login succeed
-        this.httpServletRequest.getSession().setAttribute("IS_LOGIN", true);
-        this.httpServletRequest.getSession().setAttribute("LOGIN_USER", userModel);
+        this.httpServletRequest.getSession().setAttribute(Constants.IS_LOGIN, true);
+        this.httpServletRequest.getSession().setAttribute(Constants.LOGIN_USER, userModel);
 
         return CommonReturnType.create(null);
     }

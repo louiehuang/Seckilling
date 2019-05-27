@@ -1,6 +1,7 @@
 package com.seckilling.dao;
 
 import com.seckilling.dataobject.ItemStockDO;
+import org.apache.ibatis.annotations.Param;
 
 public interface ItemStockDOMapper {
     /**
@@ -54,4 +55,9 @@ public interface ItemStockDOMapper {
      * @mbg.generated Sun May 26 11:48:03 PDT 2019
      */
     int updateByPrimaryKey(ItemStockDO record);
+
+
+    //Since we have more than 1 params, need to use @Param
+    int deductStock(@Param("itemId") Integer itemId, @Param("quantity") Integer quantity);
+
 }

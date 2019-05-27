@@ -13,4 +13,8 @@ public interface ItemService {
 
     List<ItemModel> getAllItems();
 
+    boolean deductStock(Integer itemId, Integer quantity);
+
+    void increaseSales(Integer itemId, Integer quantity);
+
 }

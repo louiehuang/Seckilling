@@ -116,4 +116,11 @@
       stock = #{stock,jdbcType=INTEGER}
     where id = #{id,jdbcType=INTEGER}
   </update>
-</mapper>
+
+  <update id="deductStock">
+    update item_stock
+    set stock = stock - #{quantity,jdbcType=INTEGER}
+    where item_id = #{itemId,jdbcType=INTEGER} and stock >= #{quantity,jdbcType=INTEGER}
+  </update>
+
+  </mapper>
