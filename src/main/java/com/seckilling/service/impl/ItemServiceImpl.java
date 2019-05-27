@@ -89,6 +89,13 @@ public class ItemServiceImpl implements ItemService {
     }
 
 
+    @Override
+    @Transactional
+    public void increaseSales(Integer itemId, Integer quantity) {
+        itemDOMapper.increaseSales(itemId, quantity);
+    }
+
+
     private ItemDO convertItemModelToItemDO(ItemModel itemModel) {
         if (itemModel == null)
             return null;

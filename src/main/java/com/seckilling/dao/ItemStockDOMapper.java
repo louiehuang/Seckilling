@@ -57,6 +57,7 @@ public interface ItemStockDOMapper {
     int updateByPrimaryKey(ItemStockDO record);
 
 
+    //Since we have more than 1 params, need to use @Param
     int deductStock(@Param("itemId") Integer itemId, @Param("quantity") Integer quantity);
 
 }
