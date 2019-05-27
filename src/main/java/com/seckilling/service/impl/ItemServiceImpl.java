@@ -37,7 +37,7 @@ public class ItemServiceImpl implements ItemService {
         //check params
         ValidationResult validationResult = validator.validate(itemModel);
         if (validationResult.isHasError()) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID, validationResult.getErrMsg());
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, validationResult.getErrMsg());
         }
 
         //itemModel -> dataObject
@@ -77,6 +77,15 @@ public class ItemServiceImpl implements ItemService {
             ItemStockDO itemStockDO = itemStockDOMapper.selectByItemId(itemDO.getId());
             return convertDataObjectToItemModel(itemDO, itemStockDO);
         }).collect(Collectors.toList());
+    }
+
+
+    @Override
+    @Transactional
+    public boolean deductStock(Integer itemId, Integer quantity) {
+        int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
+        //if deduct succeed, return true
+        return affectedRows > 0;
     }
 
 

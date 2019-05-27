@@ -47,12 +47,12 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void register(UserModel userModel) throws BusinessException {
         if (userModel == null) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID);
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID);
         }
 
         ValidationResult validationResult = validator.validate(userModel);
         if (validationResult.isHasError()) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID, validationResult.getErrMsg());
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, validationResult.getErrMsg());
         }
 
         //Transactional register
@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserService {
         try {
             userDOMapper.insertSelective(userDO);
         } catch (DuplicateKeyException ex) {
-            throw new BusinessException(EBusinessError.PARAMTER_NOT_VALID, "cellphone number already registered");
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "cellphone number already registered");
         }
 
         userModel.setId(userDO.getId());

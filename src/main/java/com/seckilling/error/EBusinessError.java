@@ -2,12 +2,16 @@ package com.seckilling.error;
 
 public enum EBusinessError implements CommonError {
     //Common errors
-    PARAMTER_NOT_VALID(10001, "Parameter is not valid"),
+    PARAMETER_NOT_VALID(10001, "Parameter is not valid"),
     UNKNOWN_ERROR(10002, "Unknown error"),
 
     //User errors
     USER_NOT_EXIST(20001, "User does not exist"),
     USER_LOGIN_FAIL(20002, "Wrong cellphone number or password"),
+    USER_NOT_LOGIN(20003, "User has not logged in"),
+
+    //Order errors
+    STOCK_NOT_ENOUGH(30001, "Stock is not enough"),
 
     ;
 
