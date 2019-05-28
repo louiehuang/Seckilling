@@ -19,7 +19,10 @@ public final class Constants {
     //exceptions
     public static final String USER_NOT_EXIST = "User does not exist";
     public static final String ITEM_NOT_EXIST = "Item does not exist";
-    public static final String QUANTITY_NOT_VALID = "quantity is not valid";
+    public static final String QUANTITY_NOT_VALID = "Quantity is not valid";
+
+    public static final String PROMOTION_INFO_NOT_CORRECT = "Promotion info is not correct";
+    public static final String PROMOTION_NOT_STARTED = "Promotion has not started yet";
 
 
 }

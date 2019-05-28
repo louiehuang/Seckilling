@@ -12,6 +12,7 @@ import com.seckilling.service.OrderService;
 import com.seckilling.service.UserService;
 import com.seckilling.service.model.ItemModel;
 import com.seckilling.service.model.OrderModel;
+import com.seckilling.service.model.PromoModel;
 import com.seckilling.service.model.UserModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderModel createOder(Integer userId, Integer itemId, Integer quantity) throws BusinessException {
+    public OrderModel createOder(Integer userId, Integer itemId, Integer quantity, Integer promoId) throws BusinessException {
         //1. check status: whether item and user exist and whether quantity is valid
         ItemModel itemModel = itemService.getItemById(itemId);
         if (itemModel == null) {
@@ -59,6 +60,17 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, Constants.QUANTITY_NOT_VALID);
         }
 
+        //check promotion
+        if (promoId != null) {
+            PromoModel promoModel = itemModel.getPromoModel();
+            if (promoModel == null || promoId.intValue() != promoModel.getId()) {
+                throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, Constants.PROMOTION_INFO_NOT_CORRECT);
+            }
+            if (promoModel.getStatus() != Constants.PROMO_ONGOING) {
+                throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, Constants.PROMOTION_NOT_STARTED);
+            }
+        }
+
         //2. deduct stock when creating order (depending on concrete situation, may deduct stock when user made payment)
         if (!itemService.deductStock(itemId, quantity)) {
             throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
@@ -69,9 +81,15 @@ public class OrderServiceImpl implements OrderService {
         orderModel.setUserId(userId);
         orderModel.setItemId(itemId);
         orderModel.setQuantity(quantity);
-        orderModel.setItemPrice(itemModel.getPrice());
-        orderModel.setOrderPrice(itemModel.getPrice().multiply(new BigDecimal(quantity)));
+        if (promoId != null) {
+            orderModel.setItemPrice(itemModel.getPromoModel().getPromoItemPrice());
+        } else {
+            orderModel.setItemPrice(itemModel.getPrice());
+        }
+        orderModel.setOrderPrice(orderModel.getItemPrice().multiply(new BigDecimal(quantity)));
         orderModel.setOrderTimestamp(Timestamp.valueOf(LocalDateTime.now()));
+
+        orderModel.setPromoId(promoId);
 
         //generate order id
         orderModel.setOrderId(generateOrderId());
