@@ -16,8 +16,19 @@ public class OrderModel {
 
     private Integer quantity;  //number of items
 
+    /**
+     * if promoId is not null, then this order is created when in second killing activity
+     */
+    private Integer promoId;
+
+    /**
+     * if promoId is not null, the price for this item is the promotion price
+     */
     private BigDecimal itemPrice;  //redundant field, price of the item when this order created (price may change)
 
+    /**
+     * if promoId is not null, the total price of this order is calculated by promotion price
+     */
     private BigDecimal orderPrice;
 
     private Timestamp orderTimestamp;
@@ -60,6 +71,14 @@ public class OrderModel {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public Integer getPromoId() {
+        return promoId;
+    }
+
+    public void setPromoId(Integer promoId) {
+        this.promoId = promoId;
     }
 
     public BigDecimal getItemPrice() {

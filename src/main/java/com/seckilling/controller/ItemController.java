@@ -1,10 +1,12 @@
 package com.seckilling.controller;
 
+import com.seckilling.common.Constants;
 import com.seckilling.controller.viewobject.ItemVO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.response.CommonReturnType;
 import com.seckilling.service.ItemService;
 import com.seckilling.service.model.ItemModel;
+import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -40,7 +42,7 @@ public class ItemController extends BaseController {
         ItemModel res = itemService.createItem(itemModel);
 
         //return to frontend
-        ItemVO itemVO = convertItemModelTOItemVO(res);
+        ItemVO itemVO = convertItemModelToItemVO(res);
 
         return CommonReturnType.create(itemVO);
     }
@@ -51,7 +53,7 @@ public class ItemController extends BaseController {
     public CommonReturnType getItem(@RequestParam(name="id") Integer id) {
         ItemModel itemModel = itemService.getItemById(id);
 
-        ItemVO itemVO = convertItemModelTOItemVO(itemModel);
+        ItemVO itemVO = convertItemModelToItemVO(itemModel);
 
         return CommonReturnType.create(itemVO);
     }
@@ -62,17 +64,28 @@ public class ItemController extends BaseController {
     public CommonReturnType getAllItems() {
         List<ItemModel> itemModelList = itemService.getAllItems();
         List<ItemVO> itemVOList = itemModelList.stream()
-                .map(this::convertItemModelTOItemVO)
+                .map(this::convertItemModelToItemVO)
                 .collect(Collectors.toList());
         return CommonReturnType.create(itemVOList);
     }
 
 
-    private ItemVO convertItemModelTOItemVO(ItemModel itemModel) {
+    private ItemVO convertItemModelToItemVO(ItemModel itemModel) {
         if (itemModel == null)
             return null;
         ItemVO itemVO = new ItemVO();
         BeanUtils.copyProperties(itemModel, itemVO);
+
+        //has second killing promotion activity
+        if (itemModel.getPromoModel() != null) {
+            itemVO.setPromoStatus(itemModel.getPromoModel().getStatus());
+            itemVO.setPromoId(itemModel.getPromoModel().getId());
+            itemVO.setStartDate(itemModel.getPromoModel().getStartDate().toString(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")));
+            itemVO.setPromoPrice(itemModel.getPromoModel().getPromoItemPrice());
+        } else {
+            itemVO.setPromoStatus(Constants.NO_PROMO);
+        }
+
         return itemVO;
     }
 
