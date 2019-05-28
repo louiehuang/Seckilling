@@ -1,5 +1,6 @@
 package com.seckilling.service.impl;
 
+import com.seckilling.common.Constants;
 import com.seckilling.dao.ItemDOMapper;
 import com.seckilling.dao.ItemStockDOMapper;
 import com.seckilling.dataobject.ItemDO;
@@ -7,7 +8,9 @@ import com.seckilling.dataobject.ItemStockDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.service.ItemService;
+import com.seckilling.service.PromoService;
 import com.seckilling.service.model.ItemModel;
+import com.seckilling.service.model.PromoModel;
 import com.seckilling.validator.ValidationResult;
 import com.seckilling.validator.ValidatorImpl;
 import org.springframework.beans.BeanUtils;
@@ -27,6 +30,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Resource
     private ItemDOMapper itemDOMapper;
+
+    @Resource
+    private PromoService promoService;
 
     @Resource
     private ItemStockDOMapper itemStockDOMapper;
@@ -66,7 +72,14 @@ public class ItemServiceImpl implements ItemService {
         ItemStockDO itemStockDO = itemStockDOMapper.selectByItemId(itemDO.getId());
 
         //DO -> model
-        return convertDataObjectToItemModel(itemDO, itemStockDO);
+        ItemModel itemModel = convertDataObjectToItemModel(itemDO, itemStockDO);
+
+        PromoModel promoModel = promoService.getPromoByItemId(itemModel.getId());
+        if (promoModel != null && promoModel.getStatus() != Constants.PROMO_ENDED) {
+            itemModel.setPromoModel(promoModel);
+        }
+
+        return itemModel;
     }
 
     @Override

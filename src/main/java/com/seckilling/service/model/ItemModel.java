@@ -28,6 +28,12 @@ public class ItemModel {
     //Do not checks sales field since this is not a param needed when creating new item
     private Integer sales;
 
+    /**
+     * if promoModel is not null, then this item has an promotion activity (either has not started or is ongoing)
+     */
+    private PromoModel promoModel;
+
+
     public Integer getId() {
         return id;
     }
@@ -82,5 +88,13 @@ public class ItemModel {
 
     public void setSales(Integer sales) {
         this.sales = sales;
+    }
+
+    public PromoModel getPromoModel() {
+        return promoModel;
+    }
+
+    public void setPromoModel(PromoModel promoModel) {
+        this.promoModel = promoModel;
     }
 }
