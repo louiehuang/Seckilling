@@ -10,6 +10,7 @@ import com.seckilling.service.UserService;
 import com.seckilling.service.model.UserModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import sun.misc.BASE64Encoder;
@@ -19,6 +20,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 
 @Controller("user")
@@ -33,6 +36,9 @@ public class UserController extends BaseController {
     // This httpServletRequest wrapped by Spring bean is a proxy in essence, so it has threadLocal for each user request
     @Autowired
     private HttpServletRequest httpServletRequest;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
 
     @RequestMapping(value = "/getotp", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
@@ -94,10 +100,17 @@ public class UserController extends BaseController {
         UserModel userModel = userService.validateLogin(cellphone, encodeByMD5(password));
 
         //add to session if login succeed
-        this.httpServletRequest.getSession().setAttribute(Constants.IS_LOGIN, true);
-        this.httpServletRequest.getSession().setAttribute(Constants.LOGIN_USER, userModel);
+        //generate token, UUID
+        String uuidToken = UUID.randomUUID().toString().replaceAll("-", "");
 
-        return CommonReturnType.create(null);
+        //construct connection between token and the login status of user
+        redisTemplate.opsForValue().set(uuidToken, userModel);
+        redisTemplate.expire(uuidToken, 1, TimeUnit.HOURS);
+
+//        this.httpServletRequest.getSession().setAttribute(Constants.IS_LOGIN, true);
+//        this.httpServletRequest.getSession().setAttribute(Constants.LOGIN_USER, userModel);
+
+        return CommonReturnType.create(uuidToken);
     }
 
 
