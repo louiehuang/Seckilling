@@ -8,12 +8,14 @@ import com.seckilling.service.ItemService;
 import com.seckilling.service.model.ItemModel;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -24,6 +26,10 @@ public class ItemController extends BaseController {
 
     @Resource
     private ItemService itemService;
+
+    @Resource
+    private RedisTemplate redisTemplate;
+
 
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
@@ -51,7 +57,14 @@ public class ItemController extends BaseController {
     @RequestMapping(value = "/get", method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType getItem(@RequestParam(name="id") Integer id) {
-        ItemModel itemModel = itemService.getItemById(id);
+        // get item from redis based on item id
+        String itemKey = "item_" + id;
+        ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get(itemKey);
+        if (itemModel == null) {
+            itemModel = itemService.getItemById(id);
+            redisTemplate.opsForValue().set(itemKey, itemModel);
+            redisTemplate.expire(itemKey, 10, TimeUnit.MINUTES);
+        }
 
         ItemVO itemVO = convertItemModelToItemVO(itemModel);
 
