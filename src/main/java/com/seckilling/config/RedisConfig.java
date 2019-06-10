@@ -1,5 +1,10 @@
 package com.seckilling.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.seckilling.serializer.JodaDateTimeJsonDeserializer;
+import com.seckilling.serializer.JodaDateTimeJsonSerializer;
+import org.joda.time.DateTime;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,6 +27,17 @@ public class RedisConfig {
 
         // change the method of serializing value
         Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+
+        // handle joda time
+        ObjectMapper objectMapper = new ObjectMapper();
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(DateTime.class, new JodaDateTimeJsonSerializer());
+        simpleModule.addDeserializer(DateTime.class, new JodaDateTimeJsonDeserializer());
+
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);  //need this
+        objectMapper.registerModule(simpleModule);
+        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+
         template.setValueSerializer(jackson2JsonRedisSerializer);
 
         return template;
