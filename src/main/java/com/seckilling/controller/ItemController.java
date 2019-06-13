@@ -4,6 +4,7 @@ import com.seckilling.common.Constants;
 import com.seckilling.controller.viewobject.ItemVO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.response.CommonReturnType;
+import com.seckilling.service.CacheService;
 import com.seckilling.service.ItemService;
 import com.seckilling.service.model.ItemModel;
 import org.joda.time.format.DateTimeFormat;
@@ -29,6 +30,9 @@ public class ItemController extends BaseController {
 
     @Resource
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private CacheService cacheService;
 
 
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
@@ -57,13 +61,23 @@ public class ItemController extends BaseController {
     @RequestMapping(value = "/get", method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType getItem(@RequestParam(name="id") Integer id) {
-        // get item from redis based on item id
+        ItemModel itemModel = null;
         String itemKey = "item_" + id;
-        ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get(itemKey);
+
+        // 1. try to get item from local cache based on item id
+        itemModel = (ItemModel) cacheService.getFromCommonCache(itemKey);
         if (itemModel == null) {
-            itemModel = itemService.getItemById(id);
-            redisTemplate.opsForValue().set(itemKey, itemModel);
-            redisTemplate.expire(itemKey, 10, TimeUnit.MINUTES);
+            // 2. try get item from Redis based on item id if local cache misses
+            itemModel = (ItemModel) redisTemplate.opsForValue().get(itemKey);
+            if (itemModel == null) {
+                // 3. get from DB
+                itemModel = itemService.getItemById(id);
+                // set Redis
+                redisTemplate.opsForValue().set(itemKey, itemModel);
+                redisTemplate.expire(itemKey, 10, TimeUnit.MINUTES);
+            }
+            // set local cache
+            cacheService.setCommonCache(itemKey, itemModel);
         }
 
         ItemVO itemVO = convertItemModelToItemVO(itemModel);
