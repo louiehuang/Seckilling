@@ -6,6 +6,7 @@ import com.seckilling.error.BusinessException;
 import com.seckilling.response.CommonReturnType;
 import com.seckilling.service.CacheService;
 import com.seckilling.service.ItemService;
+import com.seckilling.service.PromoService;
 import com.seckilling.service.model.ItemModel;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
@@ -34,6 +35,9 @@ public class ItemController extends BaseController {
     @Resource
     private CacheService cacheService;
 
+    @Resource
+    private PromoService promoService;
+
 
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
@@ -56,6 +60,17 @@ public class ItemController extends BaseController {
 
         return CommonReturnType.create(itemVO);
     }
+
+
+    //Item details page
+    @RequestMapping(value = "/publishPromo", method = {RequestMethod.GET})
+    @ResponseBody
+    public CommonReturnType publishPromo(@RequestParam(name="id") Integer id) {
+        // http://localhost:9000/item/publishPromo?id=1
+        promoService.publishPromo(id);
+        return CommonReturnType.create(null);
+    }
+
 
     //Item details page
     @RequestMapping(value = "/get", method = {RequestMethod.GET})

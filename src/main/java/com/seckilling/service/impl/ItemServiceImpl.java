@@ -14,12 +14,14 @@ import com.seckilling.service.model.PromoModel;
 import com.seckilling.validator.ValidationResult;
 import com.seckilling.validator.ValidatorImpl;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +38,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Resource
     private ItemStockDOMapper itemStockDOMapper;
+
+    @Resource
+    private RedisTemplate redisTemplate;
 
     @Override
     @Transactional
@@ -94,11 +99,25 @@ public class ItemServiceImpl implements ItemService {
 
 
     @Override
+    public ItemModel getItemByIdFromCache(Integer id) {
+        ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get("item_validate_" + id);
+        if (itemModel == null) {  // go to DB
+            itemModel = this.getItemById(id);
+            redisTemplate.opsForValue().set("item_validate_" + id, itemModel);
+            redisTemplate.expire("item_validate_" + id, 10, TimeUnit.MINUTES);
+        }
+        return itemModel;
+    }
+
+
+    @Override
     @Transactional
     public boolean deductStock(Integer itemId, Integer quantity) {
         int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
-        //if deduct succeed, return true
-        return affectedRows > 0;
+        return affectedRows > 0;  //if deduct succeed, return true
+
+//        long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
+//        return result >= 0;  //stock left >= 0
     }
 
 

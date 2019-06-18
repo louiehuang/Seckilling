@@ -13,6 +13,8 @@ public interface ItemService {
 
     List<ItemModel> getAllItems();
 
+    ItemModel getItemByIdFromCache(Integer id);
+
     boolean deductStock(Integer itemId, Integer quantity);
 
     void increaseSales(Integer itemId, Integer quantity);

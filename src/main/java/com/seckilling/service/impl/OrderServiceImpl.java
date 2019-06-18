@@ -46,12 +46,14 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderModel createOder(Integer userId, Integer itemId, Integer quantity, Integer promoId) throws BusinessException {
         //1. check status: whether item and user exist and whether quantity is valid
-        ItemModel itemModel = itemService.getItemById(itemId);
+//        ItemModel itemModel = itemService.getItemById(itemId);
+        ItemModel itemModel = itemService.getItemByIdFromCache(itemId);
         if (itemModel == null) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, Constants.ITEM_NOT_EXIST);
         }
 
-        UserModel userModel = userService.getUserById(userId);
+//        UserModel userModel = userService.getUserById(userId);
+        UserModel userModel = userService.getUserByIdFromCache(userId);
         if (userModel == null) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, Constants.USER_NOT_EXIST);
         }
