@@ -114,8 +114,10 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public boolean deductStock(Integer itemId, Integer quantity) {
         int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
-        //if deduct succeed, return true
-        return affectedRows > 0;
+        return affectedRows > 0;  //if deduct succeed, return true
+
+//        long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
+//        return result >= 0;  //stock left >= 0
     }
 
 

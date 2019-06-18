@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
     @Resource
     private RedisTemplate redisTemplate;
 
-    
+
     @Override
     public UserModel getUserById(Integer id) {
         UserDO userDO = userDOMapper.selectByPrimaryKey(id);
