@@ -42,6 +42,8 @@ public class MQProducer {
         Message message = new Message(topicName, "increase",
                 JSON.toJSON(bodyMap).toString().getBytes(Charset.forName("UTF-8")));
 
+//        System.out.println("send msg:" + message);
+
         try {
             producer.send(message);
         } catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) {

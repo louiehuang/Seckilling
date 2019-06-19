@@ -75,6 +75,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         //2. deduct stock when creating order (depending on concrete situation, may deduct stock when user made payment)
+        //producer sends a msg and updates redis, deduct stock in consumer
         if (!itemService.deductStock(itemId, quantity)) {
             throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
         }

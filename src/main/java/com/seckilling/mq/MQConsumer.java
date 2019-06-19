@@ -41,6 +41,9 @@ public class MQConsumer {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
                 Message msg = list.get(0);
+
+                System.out.println("msg: " + msg);
+
                 String jsonString = new String(msg.getBody());
                 Map<String, Object> map = JSON.parseObject(jsonString, Map.class);
                 Integer itemId = (Integer) map.get("itemId");

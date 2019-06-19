@@ -67,6 +67,7 @@ public class ItemController extends BaseController {
     @ResponseBody
     public CommonReturnType publishPromo(@RequestParam(name="id") Integer id) {
         // http://localhost:9000/item/publishPromo?id=1
+        // http://23.239.1.241/item/publishPromo?id=1
         promoService.publishPromo(id);
         return CommonReturnType.create(null);
     }

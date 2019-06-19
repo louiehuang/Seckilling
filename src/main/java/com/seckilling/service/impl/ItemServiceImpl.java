@@ -125,6 +125,7 @@ public class ItemServiceImpl implements ItemService {
 //        int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
 //        return affectedRows > 0;  //if deduct succeed, return true
 
+        //Only update stock in key "promo_item_stock_", stock in key "item_" and "item_validate_" remain the same
         long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
         if (result >= 0) {  //stock left >= 0
             boolean mqResult = mqProducer.asyncDeductStock(itemId, quantity);
