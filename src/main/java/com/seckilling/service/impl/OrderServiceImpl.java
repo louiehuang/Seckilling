@@ -7,6 +7,7 @@ import com.seckilling.dataobject.OrderDO;
 import com.seckilling.dataobject.SequenceDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
+import com.seckilling.mq.MQProducer;
 import com.seckilling.service.ItemService;
 import com.seckilling.service.OrderService;
 import com.seckilling.service.UserService;

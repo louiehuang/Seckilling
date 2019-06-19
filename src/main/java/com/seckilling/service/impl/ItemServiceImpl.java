@@ -7,12 +7,17 @@ import com.seckilling.dataobject.ItemDO;
 import com.seckilling.dataobject.ItemStockDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
+import com.seckilling.mq.MQProducer;
 import com.seckilling.service.ItemService;
 import com.seckilling.service.PromoService;
 import com.seckilling.service.model.ItemModel;
 import com.seckilling.service.model.PromoModel;
 import com.seckilling.validator.ValidationResult;
 import com.seckilling.validator.ValidatorImpl;
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -41,6 +46,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Resource
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private MQProducer mqProducer;
+
 
     @Override
     @Transactional
@@ -113,11 +122,22 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public boolean deductStock(Integer itemId, Integer quantity) {
-        int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
-        return affectedRows > 0;  //if deduct succeed, return true
+//        int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
+//        return affectedRows > 0;  //if deduct succeed, return true
 
-//        long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
-//        return result >= 0;  //stock left >= 0
+        long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
+        if (result >= 0) {  //stock left >= 0
+            boolean mqResult = mqProducer.asyncDeductStock(itemId, quantity);
+            if (!mqResult) {
+                //if fail sending mq message, add stock back
+                redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity);
+                return false;
+            }
+            return true;
+        } else {
+            redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity);
+            return false;
+        }
     }
 
 
