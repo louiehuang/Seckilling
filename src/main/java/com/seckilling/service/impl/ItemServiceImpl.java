@@ -14,10 +14,6 @@ import com.seckilling.service.model.ItemModel;
 import com.seckilling.service.model.PromoModel;
 import com.seckilling.validator.ValidationResult;
 import com.seckilling.validator.ValidatorImpl;
-import org.apache.rocketmq.client.exception.MQBrokerException;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.client.producer.SendResult;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -28,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 
 @Service
 public class ItemServiceImpl implements ItemService {
@@ -120,24 +117,33 @@ public class ItemServiceImpl implements ItemService {
 
 
     @Override
+    @SuppressWarnings("unchecked")
+    public void addStock(Integer itemId, Integer quantity) {
+        redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity);
+    }
+
+
+    @Override
     @Transactional
     public boolean deductStock(Integer itemId, Integer quantity) {
 //        int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
 //        return affectedRows > 0;  //if deduct succeed, return true
 
+        //Only update stock in key "promo_item_stock_", stock in key "item_" and "item_validate_" remain the same
         long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
         if (result >= 0) {  //stock left >= 0
-            boolean mqResult = mqProducer.asyncDeductStock(itemId, quantity);
-            if (!mqResult) {
-                //if fail sending mq message, add stock back
-                redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity);
-                return false;
-            }
             return true;
         } else {
-            redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity);
+            addStock(itemId, quantity);
             return false;
         }
+    }
+
+
+    @Override
+    public boolean asyncDeductStock(Integer itemId, Integer quantity) {
+        //send msg
+        return mqProducer.asyncDeductStock(itemId, quantity);
     }
 
 

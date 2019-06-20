@@ -74,7 +74,8 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        //2. deduct stock when creating order (depending on concrete situation, may deduct stock when user made payment)
+        //2. deduct stock (in Redis) when creating order (depending on concrete situation, may deduct stock when user made payment)
+        //producer sends a msg and updates redis, deduct stock in consumer
         if (!itemService.deductStock(itemId, quantity)) {
             throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
         }
@@ -102,6 +103,13 @@ public class OrderServiceImpl implements OrderService {
 
         //update sales of this item
         itemService.increaseSales(itemId, quantity);
+
+//        //4. after all steps ahead have been processed successfully, send msg to deduct stock in DB,
+//        boolean mqResult = itemService.asyncDeductStock(itemId, quantity);
+//        if (!mqResult) {
+//            itemService.addStock(itemId, quantity);
+//            throw new BusinessException(EBusinessError.MQ_SEND_FAIL);  //let createOder() fail and rollback
+//        }
 
         return orderModel;
     }
