@@ -3,8 +3,10 @@ package com.seckilling.service.impl;
 import com.seckilling.common.Constants;
 import com.seckilling.dao.ItemDOMapper;
 import com.seckilling.dao.ItemStockDOMapper;
+import com.seckilling.dao.StockLogDOMapper;
 import com.seckilling.dataobject.ItemDO;
 import com.seckilling.dataobject.ItemStockDO;
+import com.seckilling.dataobject.StockLogDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -46,6 +49,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Resource
     private MQProducer mqProducer;
+
+    @Resource
+    private StockLogDOMapper stockLogDOMapper;
 
 
     @Override
@@ -151,6 +157,21 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public void increaseSales(Integer itemId, Integer quantity) {
         itemDOMapper.increaseSales(itemId, quantity);
+    }
+
+
+    @Override
+    @Transactional
+    public String initStockLog(Integer itemId, Integer quantity) {
+        StockLogDO stockLogDO = new StockLogDO();
+        stockLogDO.setStockLogId(UUID.randomUUID().toString().replaceAll("-", ""));
+        stockLogDO.setItemId(itemId);
+        stockLogDO.setQuantity(quantity);
+        stockLogDO.setStatus(1);  //TODO: hard-code for test
+
+        stockLogDOMapper.insertSelective(stockLogDO);
+
+        return stockLogDO.getStockLogId();
     }
 
 

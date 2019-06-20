@@ -5,6 +5,7 @@ import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
 import com.seckilling.response.CommonReturnType;
+import com.seckilling.service.ItemService;
 import com.seckilling.service.OrderService;
 import com.seckilling.service.model.OrderModel;
 import com.seckilling.service.model.UserModel;
@@ -34,6 +35,9 @@ public class OrderController extends BaseController {
     @Resource
     private MQProducer producer;
 
+    @Resource
+    private ItemService itemService;
+
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
     public CommonReturnType createOrder(@RequestParam(name="itemId") Integer itemId,
@@ -59,7 +63,12 @@ public class OrderController extends BaseController {
 
 //        OrderModel orderModel = orderService.createOder(userModel.getId(), itemId, quantity, promoId);
 
-        if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId)) {
+
+        // init stock log before creating order (used to track order status)
+        String stockLogId = itemService.initStockLog(itemId, quantity);
+
+        // create order and send msg
+        if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId, stockLogId)) {
             throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "create order failed");
         }
 

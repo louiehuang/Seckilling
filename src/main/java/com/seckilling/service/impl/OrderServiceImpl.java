@@ -3,8 +3,10 @@ package com.seckilling.service.impl;
 import com.seckilling.common.Constants;
 import com.seckilling.dao.OrderDOMapper;
 import com.seckilling.dao.SequenceDOMapper;
+import com.seckilling.dao.StockLogDOMapper;
 import com.seckilling.dataobject.OrderDO;
 import com.seckilling.dataobject.SequenceDO;
+import com.seckilling.dataobject.StockLogDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
@@ -42,10 +44,13 @@ public class OrderServiceImpl implements OrderService {
     @Resource
     private SequenceDOMapper sequenceDOMapper;
 
+    @Resource
+    private StockLogDOMapper stockLogDOMapper;
+
 
     @Override
     @Transactional
-    public OrderModel createOder(Integer userId, Integer itemId, Integer quantity, Integer promoId) throws BusinessException {
+    public OrderModel createOder(Integer userId, Integer itemId, Integer quantity, Integer promoId, String stockLogId) throws BusinessException {
         //1. check status: whether item and user exist and whether quantity is valid
 //        ItemModel itemModel = itemService.getItemById(itemId);
         ItemModel itemModel = itemService.getItemByIdFromCache(itemId);
@@ -103,6 +108,14 @@ public class OrderServiceImpl implements OrderService {
 
         //update sales of this item
         itemService.increaseSales(itemId, quantity);
+
+        //update stock log
+        StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+        if (stockLogDO == null) {
+            throw new BusinessException(EBusinessError.UNKNOWN_ERROR);
+        }
+        stockLogDO.setStatus(2);  //stock deducted successfully (meaning order is OK)
+        stockLogDOMapper.updateByPrimaryKey(stockLogDO);
 
 //        //4. after all steps ahead have been processed successfully, send msg to deduct stock in DB,
 //        boolean mqResult = itemService.asyncDeductStock(itemId, quantity);
