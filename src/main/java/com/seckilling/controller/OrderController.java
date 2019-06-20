@@ -3,6 +3,7 @@ package com.seckilling.controller;
 import com.seckilling.common.Constants;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
+import com.seckilling.mq.MQProducer;
 import com.seckilling.response.CommonReturnType;
 import com.seckilling.service.OrderService;
 import com.seckilling.service.model.OrderModel;
@@ -30,6 +31,9 @@ public class OrderController extends BaseController {
     @Resource
     private RedisTemplate redisTemplate;
 
+    @Resource
+    private MQProducer producer;
+
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
     public CommonReturnType createOrder(@RequestParam(name="itemId") Integer itemId,
@@ -53,7 +57,11 @@ public class OrderController extends BaseController {
 //        }
 //        UserModel userModel = (UserModel) httpServletRequest.getSession().getAttribute(Constants.LOGIN_USER);
 
-        OrderModel orderModel = orderService.createOder(userModel.getId(), itemId, quantity, promoId);
+//        OrderModel orderModel = orderService.createOder(userModel.getId(), itemId, quantity, promoId);
+
+        if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId)) {
+            throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "create order failed");
+        }
 
         return CommonReturnType.create(null);
     }

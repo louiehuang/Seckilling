@@ -13,6 +13,9 @@ public enum EBusinessError implements CommonError {
     //Order errors
     STOCK_NOT_ENOUGH(30001, "Stock is not enough"),
 
+    //MQ errors
+    MQ_SEND_FAIL(40001, "Message sending failed"),
+
     ;
 
     private int errCode;
