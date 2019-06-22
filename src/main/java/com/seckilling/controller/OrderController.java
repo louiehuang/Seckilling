@@ -57,7 +57,7 @@ public class OrderController extends BaseController {
             throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
         }
 
-        //get token
+        //generate promo token
         String promoToken = promoService.generateSecondKillToken(userModel.getId(), itemId, promoId);
         if (promoToken == null) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Generating token failed");
@@ -67,6 +67,9 @@ public class OrderController extends BaseController {
     }
 
 
+    /**
+     * Logic: OrderController:createOrder() -> MQProducer:transactionAsyncDeductStock() -> OrderService:createOder()
+     */
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
     public CommonReturnType createOrder(@RequestParam(name="itemId") Integer itemId,
@@ -92,11 +95,6 @@ public class OrderController extends BaseController {
             if (promoTokenInRedis == null || !StringUtils.equals(promoTokenInRedis, promoToken)) {
                 throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Invalid promo token");
             }
-        }
-
-        // if sold out, return fail creating order
-        if (redisTemplate.hasKey(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId)) {
-            throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
         }
 
         // init stock log before creating order (used to track order status)
