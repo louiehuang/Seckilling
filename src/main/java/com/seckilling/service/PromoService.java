@@ -8,4 +8,9 @@ public interface PromoService {
 
     void publishPromo(Integer promoId);
 
+    /**
+     * generate token for second kill promotion
+     */
+    String generateSecondKillToken(Integer userId, Integer itemId, Integer promoId);
+
 }
