@@ -137,7 +137,10 @@ public class ItemServiceImpl implements ItemService {
 
         //Only update stock in key "promo_item_stock_", stock in key "item_" and "item_validate_" remain the same
         long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
-        if (result >= 0) {  //stock left >= 0
+        if (result > 0) {  //stock left > 0
+            return true;
+        } else if (result == 0) {  //mark when sold out
+            redisTemplate.opsForValue().set(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId, "true");
             return true;
         } else {
             addStock(itemId, quantity);

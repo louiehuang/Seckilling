@@ -64,12 +64,17 @@ public class OrderController extends BaseController {
 //        OrderModel orderModel = orderService.createOder(userModel.getId(), itemId, quantity, promoId);
 
 
+        // if sold out, return fail creating order
+        if (redisTemplate.hasKey(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId)) {
+            throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
+        }
+
         // init stock log before creating order (used to track order status)
         String stockLogId = itemService.initStockLog(itemId, quantity);
 
         // create order and send msg
         if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId, stockLogId)) {
-            throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "create order failed");
+            throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "Creating order failed");
         }
 
         return CommonReturnType.create(null);

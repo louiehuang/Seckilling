@@ -25,4 +25,7 @@ public final class Constants {
     public static final String PROMOTION_NOT_STARTED = "Promotion has not started yet";
 
 
+    public static final String PROMO_OUT_OF_STOCK_PREFIX = "promo_item_out_of_stock_";
+
+
 }
