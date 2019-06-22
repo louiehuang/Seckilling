@@ -23,4 +23,5 @@ public interface ItemService {
 
     void increaseSales(Integer itemId, Integer quantity);
 
+    String initStockLog(Integer itemId, Integer quantity);
 }

@@ -11,7 +11,7 @@ public enum EBusinessError implements CommonError {
     USER_NOT_LOGIN(20003, "User has not logged in"),
 
     //Order errors
-    STOCK_NOT_ENOUGH(30001, "Stock is not enough"),
+    STOCK_NOT_ENOUGH(30001, "Out of stock"),
 
     //MQ errors
     MQ_SEND_FAIL(40001, "Message sending failed"),

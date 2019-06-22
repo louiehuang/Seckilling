@@ -1,6 +1,8 @@
 package com.seckilling.mq;
 
 import com.alibaba.fastjson.JSON;
+import com.seckilling.dao.StockLogDOMapper;
+import com.seckilling.dataobject.StockLogDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.service.OrderService;
 import org.apache.rocketmq.client.exception.MQBrokerException;
@@ -34,6 +36,9 @@ public class MQProducer {
     @Resource
     private OrderService orderService;
 
+    @Resource
+    private StockLogDOMapper stockLogDOMapper;
+
     @PostConstruct
     public void init() throws MQClientException {
         producer = new DefaultMQProducer("producer_group");
@@ -51,11 +56,15 @@ public class MQProducer {
                 Integer itemId = (Integer) argsMap.get("itemId");
                 Integer quantity = (Integer) argsMap.get("quantity");
                 Integer promoId = (Integer) argsMap.get("promoId");
+                String stockLogId = (String) argsMap.get("stockLogId");
 
                 try {
-                    orderService.createOder(userId, itemId, quantity, promoId);
+                    orderService.createOder(userId, itemId, quantity, promoId, stockLogId);
                 } catch (BusinessException e) {
                     e.printStackTrace();
+                    StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+                    stockLogDO.setStatus(3);  //update status
+                    stockLogDOMapper.updateByPrimaryKeySelective(stockLogDO);
                     return LocalTransactionState.ROLLBACK_MESSAGE;
                 }
                 return LocalTransactionState.COMMIT_MESSAGE;
@@ -63,7 +72,18 @@ public class MQProducer {
 
             @Override
             public LocalTransactionState checkLocalTransaction(MessageExt msg) {
-                return null;
+                //determine what status to return based on whether stock is deducted successfully
+                String jsonString = new String(msg.getBody());
+                Map<String, Object> map = JSON.parseObject(jsonString, Map.class);
+                String stockLogId = (String) map.get("stockLogId");
+                StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+                if (stockLogDO == null || stockLogDO.getStatus() == 1) {
+                    return LocalTransactionState.UNKNOW;
+                }
+                if (stockLogDO.getStatus() == 2) {
+                    return LocalTransactionState.COMMIT_MESSAGE;
+                }
+                return LocalTransactionState.ROLLBACK_MESSAGE;
             }
         });
         transactionMQProducer.start();
@@ -71,16 +91,18 @@ public class MQProducer {
 
 
     //async stock in transactional manner
-    public boolean transactionAsyncDeductStock(Integer userId, Integer itemId, Integer quantity, Integer promoId) {
+    public boolean transactionAsyncDeductStock(Integer userId, Integer itemId, Integer quantity, Integer promoId, String stockLogId) {
         Map<String, Object> bodyMap = new HashMap<>();
         bodyMap.put("itemId", itemId);
         bodyMap.put("quantity", quantity);
+        bodyMap.put("stockLogId", stockLogId);
 
         Map<String, Object> argsMap = new HashMap<>();
         argsMap.put("userId", userId);
         argsMap.put("itemId", itemId);
         argsMap.put("quantity", quantity);
         argsMap.put("promoId", promoId);
+        argsMap.put("stockLogId", stockLogId);
 
         Message message = new Message(topicName, "increase",
                 JSON.toJSON(bodyMap).toString().getBytes(Charset.forName("UTF-8")));

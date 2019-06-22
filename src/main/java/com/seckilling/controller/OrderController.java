@@ -5,8 +5,9 @@ import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
 import com.seckilling.response.CommonReturnType;
+import com.seckilling.service.ItemService;
 import com.seckilling.service.OrderService;
-import com.seckilling.service.model.OrderModel;
+import com.seckilling.service.PromoService;
 import com.seckilling.service.model.UserModel;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -34,14 +35,19 @@ public class OrderController extends BaseController {
     @Resource
     private MQProducer producer;
 
-    @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
+    @Resource
+    private ItemService itemService;
+
+    @Resource
+    private PromoService promoService;
+
+    @RequestMapping(value = "/generateToken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
-    public CommonReturnType createOrder(@RequestParam(name="itemId") Integer itemId,
-                                        @RequestParam(name="quantity") Integer quantity,
+    public CommonReturnType generateToken(@RequestParam(name="itemId") Integer itemId,
                                         @RequestParam(name="promoId") Integer promoId)
             throws BusinessException {
         //get user login info
-        String token = httpServletRequest.getParameterMap().get("token")[0];
+        String token = httpServletRequest.getParameterMap().get("token")[0];  //get token from URL params
         if (StringUtils.isEmpty(token)) {
             throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
         }
@@ -51,16 +57,54 @@ public class OrderController extends BaseController {
             throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
         }
 
-//        Boolean isLogin = (Boolean) httpServletRequest.getSession().getAttribute(Constants.IS_LOGIN);
-//        if (isLogin == null || !isLogin) {
-//            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
-//        }
-//        UserModel userModel = (UserModel) httpServletRequest.getSession().getAttribute(Constants.LOGIN_USER);
+        //get token
+        String promoToken = promoService.generateSecondKillToken(userModel.getId(), itemId, promoId);
+        if (promoToken == null) {
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Generating token failed");
+        }
 
-//        OrderModel orderModel = orderService.createOder(userModel.getId(), itemId, quantity, promoId);
+        return CommonReturnType.create(promoToken);
+    }
 
-        if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId)) {
-            throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "create order failed");
+
+    @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
+    @ResponseBody
+    public CommonReturnType createOrder(@RequestParam(name="itemId") Integer itemId,
+                                        @RequestParam(name="quantity") Integer quantity,
+                                        @RequestParam(name="promoId", required = false) Integer promoId,
+                                        @RequestParam(name="promoToken", required = false) String promoToken)
+            throws BusinessException {
+        //get user login info
+        String userToken = httpServletRequest.getParameterMap().get("token")[0];  //get token from URL params
+        if (StringUtils.isEmpty(userToken)) {
+            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
+        }
+
+        UserModel userModel = (UserModel) redisTemplate.opsForValue().get(userToken);
+        if (userModel == null) {
+            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
+        }
+
+        //check promo token
+        if (promoId != null) {
+            String tokenKey = "promo_token_" + promoId + "_uid_" + userModel.getId() + "_iid_ " + itemId;
+            String promoTokenInRedis = (String) redisTemplate.opsForValue().get(tokenKey);
+            if (promoTokenInRedis == null || !StringUtils.equals(promoTokenInRedis, promoToken)) {
+                throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Invalid promo token");
+            }
+        }
+
+        // if sold out, return fail creating order
+        if (redisTemplate.hasKey(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId)) {
+            throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
+        }
+
+        // init stock log before creating order (used to track order status)
+        String stockLogId = itemService.initStockLog(itemId, quantity);
+
+        // create order and send msg in producer
+        if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId, stockLogId)) {
+            throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "Creating order failed");
         }
 
         return CommonReturnType.create(null);
