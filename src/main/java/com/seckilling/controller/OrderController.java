@@ -14,8 +14,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.concurrent.*;
 
 
 @Controller("order")
@@ -41,6 +43,15 @@ public class OrderController extends BaseController {
     @Resource
     private PromoService promoService;
 
+    private ExecutorService executorService;
+
+    @PostConstruct
+    public void init() {
+        //create a congestion window whose size = 30, at most 30 requests are handled at the same time
+        executorService = Executors.newFixedThreadPool(30);
+    }
+
+
     @RequestMapping(value = "/generateToken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
     public CommonReturnType generateToken(@RequestParam(name="itemId") Integer itemId,
@@ -57,7 +68,7 @@ public class OrderController extends BaseController {
             throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
         }
 
-        //get token
+        //generate promo token
         String promoToken = promoService.generateSecondKillToken(userModel.getId(), itemId, promoId);
         if (promoToken == null) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Generating token failed");
@@ -67,6 +78,9 @@ public class OrderController extends BaseController {
     }
 
 
+    /**
+     * Logic: OrderController:createOrder() -> MQProducer:transactionAsyncDeductStock() -> OrderService:createOder()
+     */
     @RequestMapping(value = "/create", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
     @ResponseBody
     public CommonReturnType createOrder(@RequestParam(name="itemId") Integer itemId,
@@ -94,17 +108,26 @@ public class OrderController extends BaseController {
             }
         }
 
-        // if sold out, return fail creating order
-        if (redisTemplate.hasKey(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId)) {
-            throw new BusinessException(EBusinessError.STOCK_NOT_ENOUGH);
-        }
+        //submit and wait
+        Future<Object> future = executorService.submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                // init stock log before creating order (used to track order status)
+                String stockLogId = itemService.initStockLog(itemId, quantity);
 
-        // init stock log before creating order (used to track order status)
-        String stockLogId = itemService.initStockLog(itemId, quantity);
+                // create order and send msg in producer
+                if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId, stockLogId)) {
+                    throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "Creating order failed");
+                }
+                return null;
+            }
+        });
 
-        // create order and send msg in producer
-        if (!producer.transactionAsyncDeductStock(userModel.getId(), itemId, quantity, promoId, stockLogId)) {
-            throw new BusinessException(EBusinessError.UNKNOWN_ERROR, "Creating order failed");
+        try {
+            future.get();  //block
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            throw new BusinessException(EBusinessError.UNKNOWN_ERROR);
         }
 
         return CommonReturnType.create(null);
