@@ -1,6 +1,5 @@
 package com.seckilling.controller;
 
-import com.seckilling.common.Constants;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
@@ -9,6 +8,7 @@ import com.seckilling.service.ItemService;
 import com.seckilling.service.OrderService;
 import com.seckilling.service.PromoService;
 import com.seckilling.service.model.UserModel;
+import com.seckilling.util.CaptchaUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
@@ -16,7 +16,12 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.RenderedImage;
+import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.*;
 
 
@@ -51,21 +56,54 @@ public class OrderController extends BaseController {
         executorService = Executors.newFixedThreadPool(30);
     }
 
-
-    @RequestMapping(value = "/generateToken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
+    @RequestMapping(value = "/generateCaptcha", method = {RequestMethod.GET, RequestMethod.POST})
     @ResponseBody
-    public CommonReturnType generateToken(@RequestParam(name="itemId") Integer itemId,
-                                        @RequestParam(name="promoId") Integer promoId)
-            throws BusinessException {
+    public void generateCaptcha(HttpServletResponse response)
+            throws BusinessException, IOException {
         //get user login info
         String token = httpServletRequest.getParameterMap().get("token")[0];  //get token from URL params
         if (StringUtils.isEmpty(token)) {
-            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
+            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create captcha");
         }
 
         UserModel userModel = (UserModel) redisTemplate.opsForValue().get(token);
         if (userModel == null) {
-            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
+            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create generate promo token");
+        }
+
+        Map<String,Object> map = CaptchaUtil.generateCodeAndPic();
+        redisTemplate.opsForValue().set("captcha_" + userModel.getId(), map.get("captcha"));
+        redisTemplate.expire("captcha_" + userModel.getId(), 5, TimeUnit.MINUTES);
+        ImageIO.write((RenderedImage) map.get("captchaPic"), "jpeg", response.getOutputStream());
+
+        System.out.println("Captcha：" + map.get("captcha"));
+    }
+
+
+    @RequestMapping(value = "/generateToken", method = {RequestMethod.POST}, consumes = {CONTENT_TYPE_FORMED})
+    @ResponseBody
+    public CommonReturnType generateToken(@RequestParam(name="itemId") Integer itemId,
+                                          @RequestParam(name="promoId") Integer promoId,
+                                          @RequestParam(name="captcha") String captcha)
+            throws BusinessException {
+        //get user login info
+        String token = httpServletRequest.getParameterMap().get("token")[0];  //get token from URL params
+        if (StringUtils.isEmpty(token)) {
+            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create generate promo token");
+        }
+
+        UserModel userModel = (UserModel) redisTemplate.opsForValue().get(token);
+        if (userModel == null) {
+            throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create generate promo token");
+        }
+
+        //check captcha
+        String captchaInRedis = (String) redisTemplate.opsForValue().get("captcha_" + userModel.getId());
+        if (StringUtils.isEmpty(captchaInRedis)) {
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Invalid request");
+        }
+        if (!captcha.equalsIgnoreCase(captchaInRedis)) {
+            throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Wrong captcha");
         }
 
         //generate promo token
