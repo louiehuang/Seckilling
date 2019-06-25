@@ -1,5 +1,6 @@
 package com.seckilling.controller;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
@@ -50,11 +51,17 @@ public class OrderController extends BaseController {
 
     private ExecutorService executorService;
 
+    private RateLimiter orderCreateRateLimiter;
+
+
     @PostConstruct
     public void init() {
         //create a congestion window whose size = 30, at most 30 requests are handled at the same time
         executorService = Executors.newFixedThreadPool(30);
+
+        orderCreateRateLimiter = RateLimiter.create(300.0);  //limit on a single server
     }
+
 
     @RequestMapping(value = "/generateCaptcha", method = {RequestMethod.GET, RequestMethod.POST})
     @ResponseBody
@@ -126,6 +133,11 @@ public class OrderController extends BaseController {
                                         @RequestParam(name="promoId", required = false) Integer promoId,
                                         @RequestParam(name="promoToken", required = false) String promoToken)
             throws BusinessException {
+
+        if (orderCreateRateLimiter.acquire() != 0) {  // return 0.0 means rate is being limited
+            throw new BusinessException(EBusinessError.REACH_RATE_LIMIT);
+        }
+
         //get user login info
         String userToken = httpServletRequest.getParameterMap().get("token")[0];  //get token from URL params
         if (StringUtils.isEmpty(userToken)) {

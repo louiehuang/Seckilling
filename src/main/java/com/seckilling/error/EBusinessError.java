@@ -4,6 +4,7 @@ public enum EBusinessError implements CommonError {
     //Common errors
     PARAMETER_NOT_VALID(10001, "Parameter is not valid"),
     UNKNOWN_ERROR(10002, "Unknown error"),
+    REACH_RATE_LIMIT(10003, "Too many users participate this promotion, please try again"),
 
     //User errors
     USER_NOT_EXIST(20001, "User does not exist"),
