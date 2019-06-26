@@ -42,7 +42,7 @@ public class PromoServiceImpl implements PromoService {
         if (promoModel == null)
             return null;
 
-        //check promotion activity status
+        //check and set promotion activity status
         setPromoModelStatus(promoModel);
 
         return promoModel;
@@ -73,7 +73,7 @@ public class PromoServiceImpl implements PromoService {
         if (promoModel == null)
             return null;
 
-        //check promotion activity status
+        //check and set promotion activity status
         setPromoModelStatus(promoModel);
 
         //check item is valid

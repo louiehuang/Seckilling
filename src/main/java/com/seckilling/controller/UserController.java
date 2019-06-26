@@ -50,8 +50,10 @@ public class UserController extends BaseController {
         int randomInt = random.nextInt(90000) + 10000;  // [10000, 99999]
         String otpCode = String.valueOf(randomInt);
 
-        // bind otp and cellphone number (use Redis in distributed system), use http session now
-        this.httpServletRequest.getSession().setAttribute(cellphone, otpCode);
+        // bind otp and cellphone number
+        String optKey = Constants.REDIS_OTP + cellphone;
+        redisTemplate.opsForValue().set(optKey, otpCode);
+        redisTemplate.expire(optKey, 5, TimeUnit.MINUTES);
 
         // TODO: send otp to user
         System.out.println("cellphone=" + cellphone + ", otpCode=" + otpCode);
@@ -70,8 +72,9 @@ public class UserController extends BaseController {
                                      @RequestParam(name="password") String password)
             throws BusinessException, NoSuchAlgorithmException {
 
-        String otpCodeInSession = (String) this.httpServletRequest.getSession().getAttribute(cellphone);
-        if (!StringUtils.equals(otpCode, otpCodeInSession)) {
+        String optKey = Constants.REDIS_OTP + cellphone;
+        String otpCodeInRedis = (String) redisTemplate.opsForValue().get(optKey);
+        if (!StringUtils.equals(otpCode, otpCodeInRedis)) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "otp code not match");
         }
 
@@ -134,6 +137,7 @@ public class UserController extends BaseController {
         UserVO userVO = convertFromModel(userModel);
         return CommonReturnType.create(userVO);
     }
+
 
     private UserVO convertFromModel(UserModel userModel) {
         if (userModel == null)

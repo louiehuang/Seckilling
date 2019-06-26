@@ -23,17 +23,17 @@ public class GlobalExceptionHandler{
     public CommonReturnType doError(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Exception ex) {
         ex.printStackTrace();
         Map<String,Object> responseData = new HashMap<>();
-        if( ex instanceof BusinessException){
+        if (ex instanceof BusinessException) {
             BusinessException businessException = (BusinessException) ex;
             responseData.put("errCode",businessException.getErrCode());
             responseData.put("errMsg",businessException.getErrMsg());
-        }else if(ex instanceof ServletRequestBindingException){
+        } else if (ex instanceof ServletRequestBindingException) {
             responseData.put("errCode", EBusinessError.UNKNOWN_ERROR.getErrCode());
             responseData.put("errMsg", "URL binding failed");
-        }else if(ex instanceof NoHandlerFoundException){
+        } else if (ex instanceof NoHandlerFoundException) {
             responseData.put("errCode",EBusinessError.UNKNOWN_ERROR.getErrCode());
             responseData.put("errMsg","No corresponding URL found");
-        }else{
+        } else {
             responseData.put("errCode", EBusinessError.UNKNOWN_ERROR.getErrCode());
             responseData.put("errMsg",EBusinessError.UNKNOWN_ERROR.getErrMsg());
         }
