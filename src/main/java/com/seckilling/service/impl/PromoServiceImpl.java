@@ -61,11 +61,19 @@ public class PromoServiceImpl implements PromoService {
         //Be aware that item could be sold during the period between we get item stock from DB and set it to cache
         //Here we simply assume that the stock will not change
         redisTemplate.opsForValue().set("promo_item_stock_" + itemModel.getId(), itemModel.getStock());
+
+        //set limitation for the number of promo tokens
+        redisTemplate.opsForValue().set("promo_count_threshold_" + promoId, 5 * itemModel.getStock());
     }
 
 
     @Override
     public String generateSecondKillToken(Integer userId, Integer itemId, Integer promoId) {
+        // check stock, if already out of stock, return fail creating order
+        if (redisTemplate.hasKey(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId)) {
+            return null;
+        }
+
         PromoDO promoDO = promoDOMapper.selectByPrimaryKey(promoId);
 
         PromoModel promoModel = convertPromoDOToPromoModel(promoDO);
@@ -88,7 +96,7 @@ public class PromoServiceImpl implements PromoService {
             return null;
         }
 
-        //check promotion, make sure that promoId matches the item and promotion is ongoing
+        //check promotion is valid, make sure that promotion matches the item and promotion is ongoing
         if (itemModel.getPromoModel() == null || promoId.intValue() != itemModel.getPromoModel().getId()) {
             return null;
         }
@@ -96,15 +104,21 @@ public class PromoServiceImpl implements PromoService {
             return null;
         }
 
-        //generate token
-        String token = UUID.randomUUID().toString().replaceAll("-" , "");
+        //check promo token threshold
+        long result = redisTemplate.opsForValue().increment("promo_count_threshold_" + promoId, -1);
+        if (result < 0) {
+            return null;
+        }
+
+        //generate promo token
+        String promoToken = UUID.randomUUID().toString().replaceAll("-" , "");
 
         //set to redis
         String tokenKey = "promo_token_" + promoId + "_uid_" + userId + "_iid_ " + itemId;
-        redisTemplate.opsForValue().set(tokenKey, token);
+        redisTemplate.opsForValue().set(tokenKey, promoToken);
         redisTemplate.expire(tokenKey, 5, TimeUnit.MINUTES);
 
-        return token;
+        return promoToken;
     }
 
 
