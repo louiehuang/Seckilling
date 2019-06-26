@@ -51,7 +51,7 @@ public class UserController extends BaseController {
         String otpCode = String.valueOf(randomInt);
 
         // bind otp and cellphone number
-        String optKey = Constants.REDIS_OTP + cellphone;
+        String optKey = String.format(Constants.REDIS_OTP, cellphone);
         redisTemplate.opsForValue().set(optKey, otpCode);
         redisTemplate.expire(optKey, 5, TimeUnit.MINUTES);
 
@@ -72,7 +72,7 @@ public class UserController extends BaseController {
                                      @RequestParam(name="password") String password)
             throws BusinessException, NoSuchAlgorithmException {
 
-        String optKey = Constants.REDIS_OTP + cellphone;
+        String optKey = String.format(Constants.REDIS_OTP, cellphone);
         String otpCodeInRedis = (String) redisTemplate.opsForValue().get(optKey);
         if (!StringUtils.equals(otpCode, otpCodeInRedis)) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "otp code not match");

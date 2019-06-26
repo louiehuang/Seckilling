@@ -1,6 +1,7 @@
 package com.seckilling.controller;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.seckilling.common.Constants;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
 import com.seckilling.mq.MQProducer;
@@ -30,9 +31,6 @@ import java.util.concurrent.*;
 @RequestMapping("/order")
 @CrossOrigin(allowCredentials = "true", origins = {"*"})
 public class OrderController extends BaseController {
-
-    @Resource
-    private OrderService orderService;
 
     @Resource
     private HttpServletRequest httpServletRequest;
@@ -79,8 +77,8 @@ public class OrderController extends BaseController {
         }
 
         Map<String,Object> map = CaptchaUtil.generateCodeAndPic();
-        redisTemplate.opsForValue().set("captcha_" + userModel.getId(), map.get("captcha"));
-        redisTemplate.expire("captcha_" + userModel.getId(), 5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(String.format(Constants.REDIS_CAPTCHA, userModel.getId()), map.get("captcha"));
+        redisTemplate.expire(String.format(Constants.REDIS_CAPTCHA, userModel.getId()), 5, TimeUnit.MINUTES);
         ImageIO.write((RenderedImage) map.get("captchaPic"), "jpeg", response.getOutputStream());
 
         System.out.println("Captcha：" + map.get("captcha"));
@@ -105,7 +103,7 @@ public class OrderController extends BaseController {
         }
 
         //check captcha
-        String captchaInRedis = (String) redisTemplate.opsForValue().get("captcha_" + userModel.getId());
+        String captchaInRedis = (String) redisTemplate.opsForValue().get(String.format(Constants.REDIS_CAPTCHA, userModel.getId()));
         if (StringUtils.isEmpty(captchaInRedis)) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Invalid request");
         }
@@ -151,7 +149,7 @@ public class OrderController extends BaseController {
 
         //check promo token
         if (promoId != null) {
-            String tokenKey = "promo_token_" + promoId + "_uid_" + userModel.getId() + "_iid_ " + itemId;
+            String tokenKey = String.format(Constants.REDIS_PROMO_TOKEN, promoId, userModel.getId(), itemId);
             String promoTokenInRedis = (String) redisTemplate.opsForValue().get(tokenKey);
             if (promoTokenInRedis == null || !StringUtils.equals(promoTokenInRedis, promoToken)) {
                 throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, "Invalid promo token");

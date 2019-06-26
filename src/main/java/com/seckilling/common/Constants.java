@@ -26,8 +26,13 @@ public final class Constants {
 
 
     //redis keys
-    public static final String PROMO_OUT_OF_STOCK_PREFIX = "promo_item_out_of_stock_";
-    public static final String REDIS_OTP = "otp_";
+    public static final String REDIS_PROMO_OUT_OF_STOCK = "promo_item_out_of_stock_%d";
+    public static final String REDIS_OTP = "otp_%s";
+    public static final String REDIS_PROMO_ITEM_STOCK = "promo_item_stock_%d";
+    public static final String REDIS_PROMO_COUNT_THRESHOLD = "promo_count_threshold_%d";
+    public static final String REDIS_PROMO_TOKEN = "promo_token_%d_uid_%d_iid_%d";
+    public static final String REDIS_CAPTCHA = "captcha_%d";
+
 
 
 }

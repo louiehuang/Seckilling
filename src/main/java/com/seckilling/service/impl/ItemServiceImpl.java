@@ -113,7 +113,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemModel getItemByIdFromCache(Integer id) {
         ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get("item_validate_" + id);
-        if (itemModel == null) {  // go to DB
+        if (itemModel == null) {  // if not found, query from DB
             itemModel = this.getItemById(id);
             redisTemplate.opsForValue().set("item_validate_" + id, itemModel);
             redisTemplate.expire("item_validate_" + id, 10, TimeUnit.MINUTES);
@@ -125,7 +125,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @SuppressWarnings("unchecked")
     public void addStock(Integer itemId, Integer quantity) {
-        redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity);
+        redisTemplate.opsForValue().increment(String.format(Constants.REDIS_PROMO_ITEM_STOCK, itemId), quantity);
     }
 
 
@@ -136,11 +136,11 @@ public class ItemServiceImpl implements ItemService {
 //        return affectedRows > 0;  //if deduct succeed, return true
 
         //Only update stock in key "promo_item_stock_", stock in key "item_" and "item_validate_" remain the same
-        long result = redisTemplate.opsForValue().increment("promo_item_stock_" + itemId, quantity * -1);
+        long result = redisTemplate.opsForValue().increment(String.format(Constants.REDIS_PROMO_ITEM_STOCK, itemId), quantity * -1);
         if (result > 0) {  //stock left > 0
             return true;
         } else if (result == 0) {  //mark when sold out
-            redisTemplate.opsForValue().set(Constants.PROMO_OUT_OF_STOCK_PREFIX + itemId, "true");
+            redisTemplate.opsForValue().set(String.format(Constants.REDIS_PROMO_OUT_OF_STOCK, itemId), "true");
             return true;
         } else {
             addStock(itemId, quantity);
