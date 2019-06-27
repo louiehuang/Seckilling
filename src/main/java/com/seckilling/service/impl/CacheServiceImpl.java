@@ -22,12 +22,12 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    public void setCommonCache(String key, Object value) {
+    public void setLocalCommonCache(String key, Object value) {
         commonCache.put(key, value);
     }
 
     @Override
-    public Object getFromCommonCache(String key) {
+    public Object getFromLocalCommonCache(String key) {
         return commonCache.getIfPresent(key);
     }
 }

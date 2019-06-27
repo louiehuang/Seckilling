@@ -1,16 +1,15 @@
 package com.seckilling.mq;
 
 import com.alibaba.fastjson.JSON;
+import com.seckilling.common.Constants;
 import com.seckilling.dao.StockLogDOMapper;
 import com.seckilling.dataobject.StockLogDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.service.OrderService;
-import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.*;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +18,7 @@ import javax.annotation.Resource;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+
 
 @Component
 public class MQProducer {
@@ -63,7 +63,7 @@ public class MQProducer {
                 } catch (BusinessException e) {
                     e.printStackTrace();
                     StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
-                    stockLogDO.setStatus(3);  //update status
+                    stockLogDO.setStatus(Constants.STOCK_LOG_ROLL_BACK);  //update status
                     stockLogDOMapper.updateByPrimaryKeySelective(stockLogDO);
                     return LocalTransactionState.ROLLBACK_MESSAGE;
                 }
@@ -77,10 +77,10 @@ public class MQProducer {
                 Map<String, Object> map = JSON.parseObject(jsonString, Map.class);
                 String stockLogId = (String) map.get("stockLogId");
                 StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
-                if (stockLogDO == null || stockLogDO.getStatus() == 1) {
+                if (stockLogDO == null || stockLogDO.getStatus() == Constants.STOCK_LOG_INIT) {
                     return LocalTransactionState.UNKNOW;
                 }
-                if (stockLogDO.getStatus() == 2) {
+                if (stockLogDO.getStatus() == Constants.STOCK_LOG_DEDUCT_OK) {
                     return LocalTransactionState.COMMIT_MESSAGE;
                 }
                 return LocalTransactionState.ROLLBACK_MESSAGE;
@@ -120,22 +120,22 @@ public class MQProducer {
     }
 
 
-    //async stock
-    public boolean asyncDeductStock(Integer itemId, Integer quantity) {
-        Map<String, Object> bodyMap = new HashMap<>();
-        bodyMap.put("itemId", itemId);
-        bodyMap.put("quantity", quantity);
-
-        Message message = new Message(topicName, "increase",
-                JSON.toJSON(bodyMap).toString().getBytes(Charset.forName("UTF-8")));
-
-        try {
-            producer.send(message);
-        } catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
+//    //async stock
+//    public boolean asyncDeductStock(Integer itemId, Integer quantity) {
+//        Map<String, Object> bodyMap = new HashMap<>();
+//        bodyMap.put("itemId", itemId);
+//        bodyMap.put("quantity", quantity);
+//
+//        Message message = new Message(topicName, "increase",
+//                JSON.toJSON(bodyMap).toString().getBytes(Charset.forName("UTF-8")));
+//
+//        try {
+//            producer.send(message);
+//        } catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+//        return true;
+//    }
 
 }

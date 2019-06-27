@@ -9,14 +9,10 @@ import com.seckilling.dataobject.SequenceDO;
 import com.seckilling.dataobject.StockLogDO;
 import com.seckilling.error.BusinessException;
 import com.seckilling.error.EBusinessError;
-import com.seckilling.mq.MQProducer;
 import com.seckilling.service.ItemService;
 import com.seckilling.service.OrderService;
-import com.seckilling.service.UserService;
 import com.seckilling.service.model.ItemModel;
 import com.seckilling.service.model.OrderModel;
-import com.seckilling.service.model.PromoModel;
-import com.seckilling.service.model.UserModel;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -36,9 +32,6 @@ public class OrderServiceImpl implements OrderService {
     private ItemService itemService;
 
     @Resource
-    private UserService userService;
-
-    @Resource
     private OrderDOMapper orderDOMapper;
 
     @Resource
@@ -53,7 +46,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderModel createOder(Integer userId, Integer itemId, Integer quantity, Integer promoId, String stockLogId) throws BusinessException {
         //1. check status: whether item and user exist and whether quantity is valid
         //already checked item, user and promotion status when generating token)
-        ItemModel itemModel = itemService.getItemByIdFromCache(itemId);
+        ItemModel itemModel = itemService.getItemByIdFromRedis(itemId);
         if (itemModel == null) {
             throw new BusinessException(EBusinessError.PARAMETER_NOT_VALID, Constants.ITEM_NOT_EXIST);
         }
@@ -92,20 +85,13 @@ public class OrderServiceImpl implements OrderService {
         //update sales of this item
         itemService.increaseSales(itemId, quantity);
 
-        //update stock log
+        //4. update stock log
         StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
         if (stockLogDO == null) {
             throw new BusinessException(EBusinessError.UNKNOWN_ERROR);
         }
-        stockLogDO.setStatus(2);  //stock deducted successfully (meaning order is OK)
+        stockLogDO.setStatus(Constants.STOCK_LOG_DEDUCT_OK);  //stock deducted successfully (meaning order is OK)
         stockLogDOMapper.updateByPrimaryKey(stockLogDO);
-
-//        //4. after all steps ahead have been processed successfully, send msg to deduct stock in DB,
-//        boolean mqResult = itemService.asyncDeductStock(itemId, quantity);
-//        if (!mqResult) {
-//            itemService.addStock(itemId, quantity);
-//            throw new BusinessException(EBusinessError.MQ_SEND_FAIL);  //let createOder() fail and rollback
-//        }
 
         return orderModel;
     }

@@ -24,6 +24,7 @@ public class App {
     @Resource
     private UserDOMapper userDOMapper;
 
+    //need to publishPromo
     public static void main( String[] args ) {
         SpringApplication.run(App.class, args);
     }

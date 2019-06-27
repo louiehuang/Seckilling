@@ -1,5 +1,6 @@
 package com.seckilling.service.impl;
 
+import com.seckilling.common.Constants;
 import com.seckilling.dao.UserDOMapper;
 import com.seckilling.dao.UserPasswordDOMapper;
 import com.seckilling.dataobject.UserDO;
@@ -49,12 +50,13 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public UserModel getUserByIdFromCache(Integer id) {
-        UserModel userModel = (UserModel) redisTemplate.opsForValue().get("user_validate_" + id);
+    public UserModel getUserByIdFromRedis(Integer id) {
+        String userKey = String.format(Constants.REDIS_USER_VALIDATE, id);
+        UserModel userModel = (UserModel) redisTemplate.opsForValue().get(userKey);
         if (userModel == null) {  // go to DB
             userModel = this.getUserById(id);
-            redisTemplate.opsForValue().set("user_validate_" + id, userModel);
-            redisTemplate.expire("user_validate_" + id, 10, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(userKey, userModel);
+            redisTemplate.expire(userKey, 10, TimeUnit.MINUTES);
         }
         return userModel;
     }

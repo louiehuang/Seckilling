@@ -85,13 +85,13 @@ public class PromoServiceImpl implements PromoService {
         setPromoModelStatus(promoModel);
 
         //check item is valid
-        ItemModel itemModel = itemService.getItemByIdFromCache(itemId);
+        ItemModel itemModel = itemService.getItemByIdFromRedis(itemId);
         if (itemModel == null) {
             return null;
         }
 
         //check user is valid
-        UserModel userModel = userService.getUserByIdFromCache(userId);
+        UserModel userModel = userService.getUserByIdFromRedis(userId);
         if (userModel == null) {
             return null;
         }
@@ -125,11 +125,11 @@ public class PromoServiceImpl implements PromoService {
 
     private void setPromoModelStatus(PromoModel promoModel) {
         if (promoModel.getStartDate().isAfterNow()) {
-            promoModel.setStatus(1);
+            promoModel.setStatus(Constants.PROMO_NOT_STARTED);
         } else if (promoModel.getEndDate().isBeforeNow()) {
-            promoModel.setStatus(3);
+            promoModel.setStatus(Constants.PROMO_ENDED);
         } else {
-            promoModel.setStatus(2);
+            promoModel.setStatus(Constants.PROMO_ONGOING);
         }
     }
 

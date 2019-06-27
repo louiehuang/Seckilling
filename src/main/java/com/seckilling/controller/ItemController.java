@@ -78,10 +78,10 @@ public class ItemController extends BaseController {
     @ResponseBody
     public CommonReturnType getItem(@RequestParam(name="id") Integer id) {
         ItemModel itemModel = null;
-        String itemKey = "item_" + id;
+        String itemKey = String.format(Constants.REDIS_ITEM, id);
 
         // 1. try to get item from local cache based on item id
-        itemModel = (ItemModel) cacheService.getFromCommonCache(itemKey);
+        itemModel = (ItemModel) cacheService.getFromLocalCommonCache(itemKey);
         if (itemModel == null) {
             // 2. try get item from Redis based on item id if local cache misses
             itemModel = (ItemModel) redisTemplate.opsForValue().get(itemKey);
@@ -93,7 +93,7 @@ public class ItemController extends BaseController {
                 redisTemplate.expire(itemKey, 10, TimeUnit.MINUTES);
             }
             // set local cache
-            cacheService.setCommonCache(itemKey, itemModel);
+            cacheService.setLocalCommonCache(itemKey, itemModel);
         }
 
         ItemVO itemVO = convertItemModelToItemVO(itemModel);

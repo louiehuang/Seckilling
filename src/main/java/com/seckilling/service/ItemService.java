@@ -13,13 +13,13 @@ public interface ItemService {
 
     List<ItemModel> getAllItems();
 
-    ItemModel getItemByIdFromCache(Integer id);
+    ItemModel getItemByIdFromRedis(Integer id);
 
     void addStock(Integer itemId, Integer quantity);
 
     boolean deductStock(Integer itemId, Integer quantity);
 
-    boolean asyncDeductStock(Integer itemId, Integer quantity);
+//    boolean asyncDeductStock(Integer itemId, Integer quantity);
 
     void increaseSales(Integer itemId, Integer quantity);
 

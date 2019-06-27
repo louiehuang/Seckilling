@@ -7,7 +7,7 @@ public interface UserService {
 
     UserModel getUserById(Integer id);
 
-    UserModel getUserByIdFromCache(Integer id);
+    UserModel getUserByIdFromRedis(Integer id);
 
     void register(UserModel userModel) throws BusinessException;
 

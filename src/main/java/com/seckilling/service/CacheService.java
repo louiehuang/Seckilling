@@ -4,7 +4,7 @@ package com.seckilling.service;
  * Local cache
  */
 public interface CacheService {
-    void setCommonCache(String key, Object value);
+    void setLocalCommonCache(String key, Object value);
 
-    Object getFromCommonCache(String key);
+    Object getFromLocalCommonCache(String key);
 }

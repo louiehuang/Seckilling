@@ -111,12 +111,13 @@ public class ItemServiceImpl implements ItemService {
 
 
     @Override
-    public ItemModel getItemByIdFromCache(Integer id) {
-        ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get("item_validate_" + id);
+    public ItemModel getItemByIdFromRedis(Integer id) {
+        String itemKey = String.format(Constants.REDIS_ITEM_VALIDATE, id);
+        ItemModel itemModel = (ItemModel) redisTemplate.opsForValue().get(itemKey);
         if (itemModel == null) {  // if not found, query from DB
             itemModel = this.getItemById(id);
-            redisTemplate.opsForValue().set("item_validate_" + id, itemModel);
-            redisTemplate.expire("item_validate_" + id, 10, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(itemKey, itemModel);
+            redisTemplate.expire(itemKey, 10, TimeUnit.MINUTES);
         }
         return itemModel;
     }
@@ -132,10 +133,8 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public boolean deductStock(Integer itemId, Integer quantity) {
-//        int affectedRows = itemStockDOMapper.deductStock(itemId, quantity);
-//        return affectedRows > 0;  //if deduct succeed, return true
-
-        //Only update stock in key "promo_item_stock_", stock in key "item_" and "item_validate_" remain the same
+        //Only update stock in key "promo_item_stock_", stock in key "item_validate_" remain the same
+        //update redis only here, DB records will be updated in consumer
         long result = redisTemplate.opsForValue().increment(String.format(Constants.REDIS_PROMO_ITEM_STOCK, itemId), quantity * -1);
         if (result > 0) {  //stock left > 0
             return true;
@@ -149,11 +148,11 @@ public class ItemServiceImpl implements ItemService {
     }
 
 
-    @Override
-    public boolean asyncDeductStock(Integer itemId, Integer quantity) {
-        //send msg
-        return mqProducer.asyncDeductStock(itemId, quantity);
-    }
+//    @Override
+//    public boolean asyncDeductStock(Integer itemId, Integer quantity) {
+//        //send msg
+//        return mqProducer.asyncDeductStock(itemId, quantity);
+//    }
 
 
     @Override
@@ -170,7 +169,7 @@ public class ItemServiceImpl implements ItemService {
         stockLogDO.setStockLogId(UUID.randomUUID().toString().replaceAll("-", ""));
         stockLogDO.setItemId(itemId);
         stockLogDO.setQuantity(quantity);
-        stockLogDO.setStatus(1);  //TODO: hard-code for test
+        stockLogDO.setStatus(Constants.STOCK_LOG_INIT);
 
         stockLogDOMapper.insertSelective(stockLogDO);
 
