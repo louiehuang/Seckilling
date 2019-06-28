@@ -132,7 +132,7 @@ public class OrderController extends BaseController {
                                         @RequestParam(name="promoToken", required = false) String promoToken)
             throws BusinessException {
 
-        if (orderCreateRateLimiter.acquire() != 0) {  // return 0.0 means rate is being limited
+        if (!orderCreateRateLimiter.tryAcquire()) {
             throw new BusinessException(EBusinessError.REACH_RATE_LIMIT);
         }
 
