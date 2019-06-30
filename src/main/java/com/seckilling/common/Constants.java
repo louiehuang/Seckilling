@@ -35,6 +35,7 @@ public final class Constants {
     public static final String REDIS_USER_VALIDATE = "user_validate_%d";  //used when generating second kill token
     public static final String REDIS_PROMO_OUT_OF_STOCK = "promo_item_out_of_stock_%d";
     public static final String REDIS_OTP = "otp_%s";
+    public static final String REDIS_ITEM_STOCK = "item_stock_%d";
     public static final String REDIS_PROMO_ITEM_STOCK = "promo_item_stock_%d";
     public static final String REDIS_PROMO_COUNT_THRESHOLD = "promo_count_threshold_%d";
     public static final String REDIS_PROMO_TOKEN = "promo_token_%d_uid_%d_iid_%d";

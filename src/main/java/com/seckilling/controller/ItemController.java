@@ -78,6 +78,20 @@ public class ItemController extends BaseController {
 
 
     /**
+     * Set normal item's stock info to Redis
+     * @param id itemId
+     * @return success
+     */
+    @RequestMapping(value = "/publishItem", method = {RequestMethod.GET})
+    @ResponseBody
+    public CommonReturnType publishItem(@RequestParam(name="id") Integer id) {
+        // http://localhost:9000/item/publishItem?id=6
+        itemService.publishItem(id);
+        return CommonReturnType.create(null);
+    }
+
+
+    /**
      * Get item detailed info, get from (1) Local cache -> (2) Redis -> (3) DB
      * @param id item id
      * @return ItemVO

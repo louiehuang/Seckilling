@@ -91,6 +91,11 @@ public class OrderController extends BaseController {
                                           @RequestParam(name="promoId") Integer promoId,
                                           @RequestParam(name="captcha") String captcha)
             throws BusinessException {
+        //If there is no promoId, then this item is a normal item
+        if (promoId == null) {
+            return CommonReturnType.create(null);
+        }
+
         //get user login info
         String token = httpServletRequest.getParameterMap().get("token")[0];  //get token from URL params
         if (StringUtils.isEmpty(token)) {
@@ -147,7 +152,7 @@ public class OrderController extends BaseController {
             throw new BusinessException(EBusinessError.USER_NOT_LOGIN, "User has not logged in, cannot create an order");
         }
 
-        //check promo token
+        //check promo token if there is a promotion
         if (promoId != null) {
             String tokenKey = String.format(Constants.REDIS_PROMO_TOKEN, promoId, userModel.getId(), itemId);
             String promoTokenInRedis = (String) redisTemplate.opsForValue().get(tokenKey);

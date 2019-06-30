@@ -81,8 +81,22 @@ public class ItemServiceImpl implements ItemService {
 
         itemStockDOMapper.insertSelective(itemStockDO);
 
+        //set stock in Redis
+        redisTemplate.opsForValue().set(String.format(Constants.REDIS_ITEM_STOCK, itemModel.getId()), itemModel.getStock());
+
         //return created object (so upstream knows the status of the object we created)
         return getItemById(itemModel.getId());
+    }
+
+
+    /**
+     * Set item stock to Redis
+     * @param itemId itemId (primary key of item table)
+     */
+    @Override
+    public void publishItem(Integer itemId) {
+        ItemModel itemModel = getItemById(itemId);
+        redisTemplate.opsForValue().set(String.format(Constants.REDIS_ITEM_STOCK, itemModel.getId()), itemModel.getStock());
     }
 
 
@@ -132,24 +146,25 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void addStockInRedis(Integer itemId, Integer quantity) {
+    public void addStockInRedis(Integer itemId, Integer quantity, Boolean isPromo) {
         redisTemplate.opsForValue().increment(String.format(Constants.REDIS_PROMO_ITEM_STOCK, itemId), quantity);
     }
 
 
     @Override
     @Transactional
-    public boolean deductStockInRedis(Integer itemId, Integer quantity) {
+    public boolean deductStockInRedis(Integer itemId, Integer quantity, Boolean isPromo) {
+        String keyTmpl = isPromo ? Constants.REDIS_PROMO_ITEM_STOCK : Constants.REDIS_ITEM_STOCK;
         //Only update stock in key "promo_item_stock_", stock in key "item_validate_" remain the same
         //update redis only here, DB records will be updated in consumer
-        long result = redisTemplate.opsForValue().increment(String.format(Constants.REDIS_PROMO_ITEM_STOCK, itemId), quantity * -1);
+        long result = redisTemplate.opsForValue().increment(String.format(keyTmpl, itemId), quantity * -1);
         if (result > 0) {  //stock left > 0
             return true;
         } else if (result == 0) {  //mark when sold out
-            redisTemplate.opsForValue().set(String.format(Constants.REDIS_PROMO_OUT_OF_STOCK, itemId), "true");
+            redisTemplate.opsForValue().set(String.format(keyTmpl, itemId), "true");
             return true;
         } else {
-            addStockInRedis(itemId, quantity);
+            addStockInRedis(itemId, quantity, isPromo);
             return false;
         }
     }

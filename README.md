@@ -110,3 +110,59 @@ Check the code in `OrderController:createOrder()`,  `MQProducer` and `OrderServi
 
 6 `MQConsumer` comsumes the message sent at step4 and deducts stock in DB. 
 
+
+
+
+
+### 3. Dependencies
+
+See pom.xml. Need to deploy MySQL, Redis and RocketMq on servers. 
+
+
+
+For `application.properties`
+
+```shell
+server.port=9000
+
+mybatis.mapper-locations=classpath:mapping/*.xml
+
+spring.datasource.name=seckilling
+#spring.datasource.url=jdbc:mysql://localhost:3306/seckilling
+spring.datasource.url=jdbc:mysql://173.255.216.112:3306/seckilling
+spring.datasource.username=root
+spring.datasource.password=yourpassword
+
+spring.datasource.type=com.alibaba.druid.pool.DruidDataSource
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+
+spring.mvc.throw-exception-if-no-handler-found=true
+spring.resources.add-mappings=false
+
+# redis
+#spring.redis.host=127.0.0.1
+spring.redis.host=173.255.216.112
+spring.redis.port=6379
+spring.redis.database=10
+#spring.redis.password=
+
+# jedis connection poll
+spring.redis.jedis.pool.max-active=50
+spring.redis.jedis.pool.min-idle=20
+
+mq.nameserver.addr=173.255.216.112:9876
+mq.topicname=stock
+```
+
+
+
+To create an order, item stock needs to be stored in Redis first. 
+
+For promotion item, call `http://ip:9000/item/publishPromo?id=1`
+
+For normal item, when creating the item, it's stock will be set to Redis, but you can also call `http://ip:9000/item/publishItem?id=6` to set manually. 
+
+
+
+
+
