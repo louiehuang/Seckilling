@@ -55,14 +55,18 @@ public class ItemController extends BaseController {
 
         ItemModel res = itemService.createItem(itemModel);
 
-        //return to frontend
+        //object returned to frontend
         ItemVO itemVO = convertItemModelToItemVO(res);
 
         return CommonReturnType.create(itemVO);
     }
 
 
-    //Item details page
+    /**
+     * Publish promotion activity, set item stock and promo token threshold to Redis
+     * @param id promotion id
+     * @return success (suppose no failure here, need to fix error handling)
+     */
     @RequestMapping(value = "/publishPromo", method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType publishPromo(@RequestParam(name="id") Integer id) {
@@ -73,7 +77,11 @@ public class ItemController extends BaseController {
     }
 
 
-    //Item details page
+    /**
+     * Get item detailed info, get from (1) Local cache -> (2) Redis -> (3) DB
+     * @param id item id
+     * @return ItemVO
+     */
     @RequestMapping(value = "/get", method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType getItem(@RequestParam(name="id") Integer id) {
@@ -102,6 +110,10 @@ public class ItemController extends BaseController {
     }
 
 
+    /**
+     * This method is used for test
+     * @return all items info found in DB
+     */
     @RequestMapping(value = "/getAll", method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType getAllItems() {
@@ -123,7 +135,7 @@ public class ItemController extends BaseController {
         if (itemModel.getPromoModel() != null) {
             itemVO.setPromoStatus(itemModel.getPromoModel().getStatus());
             itemVO.setPromoId(itemModel.getPromoModel().getId());
-            itemVO.setStartDate(itemModel.getPromoModel().getStartDate().toString(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")));
+            itemVO.setStartDate(itemModel.getPromoModel().getStartDate().toString(DateTimeFormat.forPattern(Constants.DATETIME_FORMAT)));
             itemVO.setPromoPrice(itemModel.getPromoModel().getPromoItemPrice());
         } else {
             itemVO.setPromoStatus(Constants.NO_PROMO);

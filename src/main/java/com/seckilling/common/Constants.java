@@ -5,6 +5,8 @@ public final class Constants {
 
     }
 
+    public static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
     public static final int MAX_QUANTITY = 100;
     public static final String ORDER_AUTO_SEQUENCE = "order_info";
 

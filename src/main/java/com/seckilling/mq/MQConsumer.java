@@ -42,13 +42,14 @@ public class MQConsumer {
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
                 Message msg = list.get(0);
 
-                System.out.println("msg: " + msg);
+//                System.out.println("msg: " + msg);
 
                 String jsonString = new String(msg.getBody());
                 Map<String, Object> map = JSON.parseObject(jsonString, Map.class);
                 Integer itemId = (Integer) map.get("itemId");
                 Integer quantity = (Integer) map.get("quantity");
 
+                //deduct stock in DB
                 itemStockDOMapper.deductStock(itemId, quantity);
 
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;

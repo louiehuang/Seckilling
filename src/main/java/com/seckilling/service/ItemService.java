@@ -15,9 +15,9 @@ public interface ItemService {
 
     ItemModel getItemByIdFromRedis(Integer id);
 
-    void addStock(Integer itemId, Integer quantity);
+    void addStockInRedis(Integer itemId, Integer quantity);
 
-    boolean deductStock(Integer itemId, Integer quantity);
+    boolean deductStockInRedis(Integer itemId, Integer quantity);
 
 //    boolean asyncDeductStock(Integer itemId, Integer quantity);
 

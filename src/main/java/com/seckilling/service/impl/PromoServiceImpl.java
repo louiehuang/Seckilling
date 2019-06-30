@@ -34,6 +34,12 @@ public class PromoServiceImpl implements PromoService {
     @Resource
     private RedisTemplate redisTemplate;
 
+
+    /**
+     * Get promotion info from promo table in DB by itemId
+     * @param itemId itemId (foreign key)
+     * @return PromoModel
+     */
     @Override
     public PromoModel getPromoByItemId(Integer itemId) {
         PromoDO promoDO = promoDOMapper.selectByItemId(itemId);
@@ -49,6 +55,10 @@ public class PromoServiceImpl implements PromoService {
     }
 
 
+    /**
+     * Publish promotion activity, set item stock and promo token threshold to Redis
+     * @param promoId promoId (primary key of promo table)
+     */
     @Override
     public void publishPromo(Integer promoId) {
         PromoDO promoDO = promoDOMapper.selectByPrimaryKey(promoId);
@@ -67,6 +77,14 @@ public class PromoServiceImpl implements PromoService {
     }
 
 
+    /**
+     * Generate token (UUID) for second kill promotion and store in Redis
+     * Check whether item, user and promotion is valid before generating the promo token
+     * @param userId
+     * @param itemId
+     * @param promoId
+     * @return promo token
+     */
     @Override
     public String generateSecondKillToken(Integer userId, Integer itemId, Integer promoId) {
         // check stock, if already out of stock, return fail creating order
