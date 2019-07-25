@@ -1,0 +1,80 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="static/assets/global/css/components.css" rel="stylesheet" type="text/css">
+    <link href="static/assets/admin/pages/css/login.css" rel="stylesheet" type="text/css">
+</head>
+
+
+<body>
+    <div class="content" style="margin-top: 30px">
+        <h3 class="form-title">View Items</h3>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Item Image</th>
+                        <th>Item Description</th>
+                        <th>Item Price</th>
+                        <th>Item Stock</th>
+                        <th>Item Sales</th>
+                    </tr>
+                </thead>
+                <tbody id = "item_container">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+
+
+
+<script type="text/javascript" src="static/assets/global/plugins/jquery-1.11.0.min.js"></script>
+
+<script>
+    var g_itemList = [];
+
+    jQuery(document).ready(function() {
+        $.ajax({
+            type: "GET",
+            url: "http://localhost:9000/item/getAll",
+            xhrFields: {withCredentials: true},
+            success: function(data) {
+                if (data.status == "success") {
+                    g_itemList = data.data;
+                    reloadDom();
+                } else {  //"fail"
+                    alert("Get Item List failed, reason: " + data.data.errMsg);
+                }
+            },
+            error: function(data) {
+                alert("Get Item List failed, reason: " + data.responseText);
+            }
+        });
+    });
+
+    function reloadDom() {
+        for (var i = 0; i < g_itemList.length; i++) {
+            var itemVO = g_itemList[i];
+            var dom = "<tr data-id='" + itemVO.id + "' id = 'itemDetail" + itemVO.id + "'>" + 
+                "<td>" + itemVO.name + "</td>" + 
+                "<td><img style='width:100px; height:auto;' src='" + itemVO.imgUrl + "'/></td>" + 
+                "<td>" + itemVO.description + "</td>" + 
+                "<td>" + itemVO.price + "</td>" + 
+                "<td>" + itemVO.stock + "</td>" + 
+                "<td>" + itemVO.sales + "</td>" + 
+            "</tr>";
+            $("#item_container").append($(dom));
+
+            $("#itemDetail" + itemVO.id).on("click", function(e) {
+                window.location.href = "getitem.html?id=" + $(this).data("id");
+            });
+        }
+    }
+</script>
+
+
+</html>

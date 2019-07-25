@@ -1,0 +1,245 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="static/assets/global/css/components.css" rel="stylesheet" type="text/css">
+    <link href="static/assets/admin/pages/css/login.css" rel="stylesheet" type="text/css">
+</head>
+
+
+<body class="login">
+    <div class="content" style="margin-top: 30px">
+        <h3 class="form-title">Item Details</h3>
+
+        <div id="promoStartDateContainer" class="form-group">
+            <label style="color: blue" id="promoStatus" class="control-label"></label>
+            <div>
+                <label style="color: red" class="control-label" id="promoStartDate"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label">Item Name</label>
+            <div>
+                <label class="control-label" id="itemName"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Item Description</label>
+            <div>
+                <label class="control-label" id="description"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div>
+                <img style="width: 150px; height: auto" id="imgUrl"/>
+            </div>
+        </div>
+
+        <div id="normalPriceContainer" class="form-group">
+            <label class="control-label">Price</label>
+            <div>
+                <label class="control-label" id="price"/>
+            </div>
+        </div>
+        <div id="promoPriceContainer" class="form-group">
+            <label style="color: red" class="control-label">Promotion Price</label>
+            <div>
+                <label style="color: red" class="control-label" id="promoPrice"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label">Stock</label>
+            <div>
+                <label class="control-label" id="stock"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Sales</label>
+            <div>
+                <label class="control-label" id="sales"/>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn blue" id="create_order" type="submit">
+                Buy
+            </button>
+        </div>
+
+        <div id="captchaDiv" class="form-actions" style="display:none;">
+            <img src="" />
+            <input type="text" id="captchaContent" value="">
+            <button class="btn blue" id="verifyBtn" type="submit">
+                Verify
+            </button>
+        </div>
+    </div>
+
+</body>
+
+</html>
+
+
+<script type="text/javascript" src="static/assets/global/plugins/jquery-1.11.0.min.js"></script>
+
+<script>
+    var g_itemVO = {};
+
+    jQuery(document).ready(function() {
+        $.ajax({
+            type: "GET",
+            url: "http://localhost:9000/item/get",
+            data: {
+                "id": getUrlParam("id"),
+            },
+            xhrFields: {withCredentials: true},
+            success: function(data) {
+                if (data.status == "success") {
+                    g_itemVO = data.data;
+                    reloadDom();
+                    setInterval(reloadDom, 1000);
+                } else {  //"fail"
+                    alert("Get Item Info failed, reason: " + data.data.errMsg);
+                }
+            },
+            error: function(data) {
+                alert("Get Item Info failed, reason: " + data.responseText);
+            }
+        });
+
+
+        $("#create_order").on("click", function() {
+            var token = window.localStorage["token"];
+            if (token == null) {
+                alert("Please login to make an order");
+                window.location.href = "login.html";
+                return false;
+            }
+
+            // token="c458230b2b0b41d69579799aef99ca08";
+            var url = "http://localhost:9000/order/generateCaptcha?token=" + token;
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = "blob";
+            xhr.onload = function() {
+                if (this.status == 200) {
+                    if (this.response.type == "application/json") {  //BusinessException is returned by server
+                        alert("Please login to make an order");
+                        window.location.href = "login.html";
+                        return false;
+                    }
+                    var blob = this.response;  // type="text/xml"
+                    // console.log(blob);
+                     $("#captchaDiv img").attr("src", window.URL.createObjectURL(blob));
+                     $("#captchaDiv").show();
+                }
+            }
+            xhr.send();
+
+             // $("#captchaDiv img").attr("src", "http://localhost:9000/order/generateCaptcha?token=" + token);
+             // $("#captchaDiv").show();
+        });
+
+
+        $("#verifyBtn").on("click", function() {
+            var token = window.localStorage["token"];
+            $.ajax({
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                url: "http://localhost:9000/order/generateToken?token=" + token,
+                data: {
+                    "itemId": g_itemVO.id,
+                    "promoId": g_itemVO.promoId,
+                    "captcha": $("#captchaContent").val()
+                },
+                xhrFields: {withCredentials: true},
+                success: function(data) {
+                    if (data.status == "success") {
+                        var promoToken = data.data;  //if no promotion, promoToken will be null
+                        $.ajax({
+                            type: "POST",
+                            contentType: "application/x-www-form-urlencoded",
+                            url: "http://localhost:9000/order/create?token=" + token,
+                            data: {
+                                "itemId": g_itemVO.id,
+                                "quantity": 1,
+                                "promoId": g_itemVO.promoId,
+                                "promoToken": promoToken
+                            },
+                            xhrFields: {withCredentials: true},
+                            success: function(data) {
+                                if (data.status == "success") {
+                                    alert("Create Order succeed");
+                                    window.location.reload();
+                                } else {  //"fail"
+                                    alert("Create Order failed, reason: " + data.data.errMsg);
+                                    if (data.data.errCode == 20003) {
+                                         window.location.href = "login.html";
+                                    }
+                                }
+                            },
+                            error: function(data) {
+                                alert("Create Order failed, reason: " + data.responseText);
+                            }
+                        });
+                    } else {  //"fail"
+                        alert("Get promo token failed, reason: " + data.data.errMsg);
+                        if (data.data.errCode == 20003) {
+                             window.location.href = "login.html";
+                        }
+                    }
+                },
+                error: function(data) {
+                    alert("Get promo token failed, reason: " + data.responseText);
+                }
+            });
+
+        });
+
+    });
+
+
+    function reloadDom() {
+        $("#itemName").text(g_itemVO.name);
+        $("#description").text(g_itemVO.description);
+        $("#imgUrl").attr("src", g_itemVO.imgUrl);
+        $("#price").text(g_itemVO.price);
+        $("#stock").text(g_itemVO.stock);
+        $("#sales").text(g_itemVO.sales);
+
+        //Promotion Start Date
+
+        if (g_itemVO.promoStatus == 1) {
+            var startTime = g_itemVO.startDate.replace(new RegExp("-", "gm"), "/");
+            startTime = new Date(startTime).getTime();
+            var nowTime = Date.parse(new Date());
+            var delta = (startTime - nowTime) / 1000;
+
+            if (delta <= 0) {  //promotion started
+                g_itemVO.promoStatus = 2;
+                reloadDom();
+            }
+
+            $("#create_order").attr("disabled", true);
+            $("#promoStartDate").text("Promotion will start at: " + g_itemVO.startDate + 
+                "\n Countdown: " + delta + " s");
+            $("#promoPrice").text(g_itemVO.promoPrice);
+        } else if (g_itemVO.promoStatus == 2) {
+            $("#create_order").attr("disabled", false);
+            $("#promoStartDate").text("Promotion is ongoing");
+            $("#promoPrice").text(g_itemVO.promoPrice);
+            $("#normalPriceContainer").hide();
+        }
+    }
+
+
+    function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]); return null;
+    }
+
+</script>
+

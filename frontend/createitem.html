@@ -1,0 +1,117 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="static/assets/global/css/components.css" rel="stylesheet" type="text/css">
+    <link href="static/assets/admin/pages/css/login.css" rel="stylesheet" type="text/css">
+</head>
+
+
+<body class="login">
+    <div class="content" style="margin-top: 30px">
+        <h3 class="form-title">Create Item</h3>
+        <div class="form-group">
+            <label class="control-label">Item Name</label>
+            <div>
+                <input class="form-control" type="text" placeholder="item name", name="itemName", id="itemName"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Item Description</label>
+            <div>
+                <input class="form-control" type="text" placeholder="description", name="description", id="description"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Image URL</label>
+            <div>
+                <input class="form-control" type="text" placeholder="image url", name="imgUrl", id="imgUrl"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Price</label>
+            <div>
+                <input class="form-control" type="text" placeholder="price", name="price", id="price"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Stock</label>
+            <div>
+                <input class="form-control" type="text" placeholder="stock", name="stock", id="stock"/>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn blue" id="create" type="submit">
+                Submit
+            </button>
+        </div>
+    </div>
+
+</body>
+
+
+
+<script type="text/javascript" src="static/assets/global/plugins/jquery-1.11.0.min.js"></script>
+
+<script>
+    jQuery(document).ready(function() {
+        // button id
+        $("#create").on("click", function() {
+            var itemName = $("#itemName").val();
+            var description = $("#description").val();
+            var imgUrl = $("#imgUrl").val();
+            var price = $("#price").val();
+            var stock = $("#stock").val();
+
+            if (itemName == null || itemName == "") {
+                alert("Please enter item name");
+                return false;
+            }
+            if (description == null || description == "") {
+                alert("Please enter item description");
+                return false;
+            }
+            if (imgUrl == null || imgUrl == "") {
+                alert("Please enter image URL");
+                return false;
+            }
+            if (price == null || price == "") {
+                alert("Please enter your price");
+                return false;
+            }
+            if (stock == null || stock == "") {
+                alert("Please enter stock number");
+                return false;
+            }
+
+            $.ajax({
+                type: "POST",
+                contentType: "application/x-www-form-urlencoded",
+                url: "http://localhost:9000/item/create",
+                data: {
+                    "itemName": itemName,
+                    "description": description,
+                    "imgUrl": imgUrl,
+                    "price": price,
+                    "stock": stock,
+                },
+                xhrFields: {withCredentials: true},
+                success: function(data) {
+                    if (data.status == "success") {
+                        alert("Creation succeed");
+                    } else {  //"fail"
+                        alert("Creation failed, reason: " + data.data.errMsg);
+                    }
+                },
+                error: function(data) {
+                    alert("Creation failed, reason: " + data.responseText);
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+
+</html>
